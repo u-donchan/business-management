@@ -108,6 +108,7 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
     <div class="fg"><label>メールアドレス</label><input type="email" id="loginEmail"></div>
     <div class="fg"><label>パスワード</label><input type="password" id="loginPass"></div>
     <button class="btn btn-p" onclick="doLogin()" style="width:100%;padding:10px;font-size:13px;">ログイン</button>
+    <button class="btn btn-o" onclick="doSignup()" style="width:100%;padding:8px;font-size:12px;margin-top:8px;">新規アカウント作成</button>
     <div class="login-err" id="loginErr"></div>
   </div>
 </div>
@@ -172,6 +173,14 @@ async function doLogin(){
   const{error}=await sb.auth.signInWithPassword({email:e,password:p});
   if(error){showLoginErr(error.message);return;}
   const{data:{session}}=await sb.auth.getSession();currentUser=session.user;showApp();
+}
+async function doSignup(){
+  const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;
+  if(!e||!p){showLoginErr('入力してください');return;}
+  if(p.length<6){showLoginErr('パスワードは6文字以上');return;}
+  const{error}=await sb.auth.signUp({email:e,password:p});
+  if(error){showLoginErr(error.message);return;}
+  const el=document.getElementById('loginErr');el.textContent='確認メールを送信しました。メール内のリンクをクリック後にログインしてください。';el.style.display='block';el.style.color='var(--ok)';
 }
 async function doLogout(){await sb.auth.signOut();location.reload();}
 function showLoginErr(m){const e=document.getElementById('loginErr');e.textContent=m;e.style.display='block';}
