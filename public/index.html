@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>経営管理システム</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--pri:#1e40af;--pri-l:#dbeafe;--pri-d:#1e3a8a;--ok:#16a34a;--ok-l:#dcfce7;
+--warn:#f59e0b;--warn-l:#fef3c7;--err:#dc2626;--err-l:#fee2e2;
+--g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;--g400:#9ca3af;--g500:#6b7280;
+--g600:#4b5563;--g700:#374151;--g800:#1f2937;--r:6px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(--g100);color:var(--g800);font-size:13px;line-height:1.5;}
+
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a5f,#1e40af);}
+.login-box{background:#fff;border-radius:12px;padding:40px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.login-box h1{font-size:20px;margin-bottom:4px;} .login-box p{font-size:13px;color:var(--g500);margin-bottom:20px;}
+.login-box .fg{margin-bottom:14px;} .login-box label{display:block;font-size:12px;font-weight:600;margin-bottom:3px;color:var(--g600);}
+.login-box input{width:100%;padding:10px 12px;border:1px solid var(--g300);border-radius:var(--r);font-size:14px;outline:none;}
+.login-box input:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(30,64,175,.1);}
+.login-err{color:var(--err);font-size:12px;margin-top:8px;display:none;}
+
+/* Header */
+.hdr{background:var(--pri);color:#fff;padding:6px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);gap:6px;}
+.hdr-l{display:flex;align-items:center;gap:10px;} .hdr h1{font-size:14px;font-weight:700;}
+.hdr-r{display:flex;gap:5px;align-items:center;}
+.hdr .user-info{font-size:10px;opacity:.8;}
+
+/* Year */
+.yr-sel{display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.12);border-radius:var(--r);padding:2px 3px;}
+.yr-btn{padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:rgba(255,255,255,.7);border:none;border-radius:4px;}
+.yr-btn:hover{background:rgba(255,255,255,.15);color:#fff;} .yr-btn.active{background:rgba(255,255,255,.25);color:#fff;}
+
+/* Buttons */
+.btn{padding:5px 10px;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:3px;}
+.btn:hover{opacity:.88;} .btn-p{background:var(--pri);color:#fff;} .btn-d{background:var(--err);color:#fff;}
+.btn-o{background:#fff;color:var(--g700);border:1px solid var(--g300);} .btn-w{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);}
+.btn-sm{padding:3px 8px;font-size:10px;} .btn-s{background:var(--ok);color:#fff;}
+
+/* Tabs - Customer */
+.cust-tabs{background:#fff;border-bottom:2px solid var(--g200);display:flex;padding:0 16px;position:sticky;top:34px;z-index:99;}
+.cust-tab{padding:8px 18px;font-size:12px;font-weight:600;color:var(--g500);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;}
+.cust-tab:hover{color:var(--g700);background:var(--g50);} .cust-tab.active{color:var(--pri);border-bottom-color:var(--pri);}
+.cust-tab.tab-all{font-style:italic;}
+
+/* Sub tabs */
+.sub-tabs{background:var(--g50);border-bottom:1px solid var(--g200);display:flex;padding:0 16px;}
+.sub-tab{padding:6px 14px;font-size:11px;font-weight:600;color:var(--g500);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.sub-tab:hover{color:var(--g700);} .sub-tab.active{color:var(--pri-d);border-bottom-color:var(--pri-d);}
+
+.wrap{padding:12px 16px;max-width:1200px;margin:0 auto;}
+
+/* Meeting list */
+.mt-card{background:#fff;border-radius:var(--r);border:1px solid var(--g200);margin-bottom:10px;overflow:hidden;}
+.mt-header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--g50);border-bottom:1px solid var(--g200);cursor:pointer;}
+.mt-header:hover{background:var(--pri-l);}
+.mt-date{font-weight:700;color:var(--pri);font-size:13px;} .mt-title{font-weight:600;flex:1;margin-left:12px;}
+.mt-body{padding:14px;display:none;} .mt-body.open{display:block;}
+.mt-section{margin-bottom:12px;}
+.mt-section h3{font-size:12px;font-weight:700;color:var(--g600);margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--g200);}
+.mt-section pre{white-space:pre-wrap;font-family:inherit;font-size:12px;color:var(--g700);line-height:1.6;background:var(--g50);padding:8px;border-radius:4px;}
+.mt-tasks{background:var(--warn-l);padding:8px;border-radius:4px;} .mt-ctasks{background:var(--pri-l);padding:8px;border-radius:4px;}
+
+/* Decision list */
+.dec-item{padding:8px 12px;border-bottom:1px solid var(--g100);display:flex;gap:10px;align-items:flex-start;}
+.dec-item:last-child{border-bottom:none;}
+.dec-date{font-size:10px;color:var(--g400);min-width:70px;} .dec-content{flex:1;font-size:12px;}
+.dec-tag{font-size:9px;padding:1px 6px;border-radius:8px;background:var(--pri-l);color:var(--pri-d);font-weight:600;}
+.dec-code{font-size:9px;color:var(--g500);}
+
+/* Modal */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;}
+.mo.active{display:flex;}
+.mo-box{background:#fff;border-radius:10px;width:95%;max-width:800px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.mo-hd{padding:14px 18px;border-bottom:1px solid var(--g200);display:flex;justify-content:space-between;align-items:center;}
+.mo-hd h2{font-size:15px;} .mo-cl{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g400);} .mo-cl:hover{color:var(--g700);}
+.mo-bd{padding:16px 18px;} .mo-ft{padding:10px 18px;border-top:1px solid var(--g200);display:flex;justify-content:space-between;gap:6px;}
+.fg{margin-bottom:10px;} .fg label{display:block;font-size:11px;font-weight:600;color:var(--g600);margin-bottom:2px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:6px 8px;border:1px solid var(--g300);border-radius:var(--r);font-size:12px;outline:none;font-family:inherit;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(30,64,175,.1);}
+.fg-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.fg textarea{min-height:80px;resize:vertical;}
+
+/* Decision inline add */
+.dec-add{display:flex;gap:6px;padding:8px;background:var(--g50);border-radius:4px;margin-top:8px;}
+.dec-add input{flex:1;padding:4px 8px;font-size:11px;border:1px solid var(--g300);border-radius:4px;outline:none;}
+.dec-add select{padding:4px;font-size:10px;border:1px solid var(--g300);border-radius:4px;}
+
+/* Toast & saving */
+.toast{position:fixed;bottom:16px;right:16px;background:var(--g800);color:#fff;padding:8px 14px;border-radius:var(--r);font-size:12px;z-index:300;transform:translateY(60px);opacity:0;transition:all .3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.saving{position:fixed;top:38px;right:16px;background:var(--warn);color:#fff;padding:4px 10px;border-radius:var(--r);font-size:10px;font-weight:600;z-index:200;display:none;}
+.saving.show{display:block;}
+
+.empty{text-align:center;padding:40px;color:var(--g400);} .empty p{font-size:14px;margin:6px 0 10px;}
+@media(max-width:768px){.wrap{padding:8px;}.fg-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-box">
+    <h1>📝 経営管理システム</h1>
+    <p>メールアドレスとパスワードでログイン</p>
+    <div class="fg"><label>メールアドレス</label><input type="email" id="loginEmail"></div>
+    <div class="fg"><label>パスワード</label><input type="password" id="loginPass"></div>
+    <button class="btn btn-p" onclick="doLogin()" style="width:100%;padding:10px;font-size:13px;">ログイン</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="appScreen" style="display:none;">
+  <div class="hdr">
+    <div class="hdr-l"><h1>📝 経営管理</h1><div class="yr-sel" id="yearSel"></div></div>
+    <div class="hdr-r">
+      <span class="user-info" id="userInfo"></span>
+      <button class="btn btn-w btn-sm" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="cust-tabs" id="custTabs"></div>
+  <div class="sub-tabs" id="subTabs"></div>
+  <div class="wrap" id="content"></div>
+</div>
+
+<!-- Meeting Modal -->
+<div class="mo" id="mtMo">
+  <div class="mo-box">
+    <div class="mo-hd"><h2 id="mtTitle">新規打合せ</h2><button class="mo-cl" onclick="closeMo('mtMo')">&times;</button></div>
+    <div class="mo-bd">
+      <input type="hidden" id="mtId">
+      <div class="fg-row">
+        <div class="fg"><label>日付 *</label><input type="date" id="mtDate"></div>
+        <div class="fg"><label>タイトル *</label><input type="text" id="mtTitleIn" placeholder="第1回 開発打合せ"></div>
+        <div class="fg"><label>参加者</label><input type="text" id="mtAttendees" placeholder="田中、佐藤、李"></div>
+      </div>
+      <div class="fg"><label>議事内容</label><textarea id="mtContent" rows="6" placeholder="打ち合わせの内容を記載"></textarea></div>
+      <div class="fg"><label>弊社タスク</label><textarea id="mtOurTasks" rows="3" placeholder="自社側のアクション項目"></textarea></div>
+      <div class="fg"><label>お客様タスク</label><textarea id="mtCustTasks" rows="3" placeholder="顧客側のアクション項目"></textarea></div>
+      <div id="decisionArea"></div>
+    </div>
+    <div class="mo-ft">
+      <button class="btn btn-o" onclick="copyForEmail()" title="メール用にコピー">📋 メール用コピー</button>
+      <div>
+        <button class="btn btn-o" onclick="closeMo('mtMo')">キャンセル</button>
+        <button class="btn btn-p" id="mtSaveBtn" onclick="saveMeeting()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="saving" id="savingInd">保存中...</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://awsgpyggrplrvwtlulzr.supabase.co';
+const SB_KEY='sb_publishable_mZpGv83mA_263Guu5oqKmw_sjdx3m7k';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+let CUSTOMERS=[],MEETINGS=[],DECISIONS=[],YEARS=[];
+let CUR_YEAR=2026,curCust=null,curView='meetings',currentUser=null;
+let editDecisions=[];
+
+// ── Auth ──
+async function checkAuth(){const{data:{session}}=await sb.auth.getSession();if(session){currentUser=session.user;showApp();}}
+async function doLogin(){
+  const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;
+  if(!e||!p){showLoginErr('入力してください');return;}
+  const{error}=await sb.auth.signInWithPassword({email:e,password:p});
+  if(error){showLoginErr(error.message);return;}
+  const{data:{session}}=await sb.auth.getSession();currentUser=session.user;showApp();
+}
+async function doLogout(){await sb.auth.signOut();location.reload();}
+function showLoginErr(m){const e=document.getElementById('loginErr');e.textContent=m;e.style.display='block';}
+function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appScreen').style.display='block';document.getElementById('userInfo').textContent=currentUser.email;loadData();}
+
+// ── Data ──
+async function loadData(){
+  const[{data:y},{data:c}]=await Promise.all([
+    sb.from('years').select('year').order('year'),
+    sb.from('customers').select('*').order('sort_order')
+  ]);
+  YEARS=(y||[]).map(r=>r.year);if(!YEARS.length)YEARS=[2026];
+  CUSTOMERS=c||[];
+  CUR_YEAR=YEARS[YEARS.length-1];
+  curCust=CUSTOMERS[0]?.id||null;
+  await loadMeetings();
+}
+async function loadMeetings(){
+  const filter=curCust?{customer_id:curCust}:{};
+  let q=sb.from('meetings').select('*').eq('year',CUR_YEAR).order('meeting_date',{ascending:false});
+  if(curCust)q=q.eq('customer_id',curCust);
+  const{data:m}=await q;
+  MEETINGS=m||[];
+  let dq=sb.from('decisions').select('*').eq('year',CUR_YEAR).order('decided_at',{ascending:false});
+  if(curCust)dq=dq.eq('customer_id',curCust);
+  const{data:d}=await dq;
+  DECISIONS=d||[];
+  render();
+}
+
+// ── Render ──
+function render(){
+  // Year
+  document.getElementById('yearSel').innerHTML=YEARS.map(y=>
+    `<button class="yr-btn${CUR_YEAR===y?' active':''}" onclick="switchYear(${y})">${y}年度</button>`
+  ).join('');
+  // Customer tabs
+  document.getElementById('custTabs').innerHTML=
+    CUSTOMERS.map(c=>`<div class="cust-tab${curCust===c.id?' active':''}" onclick="switchCust('${c.id}')">${esc(c.name)}</div>`).join('');
+  // Sub tabs
+  document.getElementById('subTabs').innerHTML=
+    `<div class="sub-tab${curView==='meetings'?' active':''}" onclick="curView='meetings';render();">打合せ一覧</div>`+
+    `<div class="sub-tab${curView==='decisions'?' active':''}" onclick="curView='decisions';render();">決定事項一覧</div>`;
+
+  const ct=document.getElementById('content');
+  if(curView==='meetings')ct.innerHTML=renderMeetings();
+  else ct.innerHTML=renderDecisions();
+}
+
+function renderMeetings(){
+  let h=`<div style="margin-bottom:10px;"><button class="btn btn-p" onclick="openNewMeeting()">＋ 新規打合せ</button></div>`;
+  if(!MEETINGS.length)return h+'<div class="empty"><p>打合せがまだありません</p></div>';
+  MEETINGS.forEach(m=>{
+    const decs=DECISIONS.filter(d=>d.meeting_id===m.id);
+    h+=`<div class="mt-card">
+      <div class="mt-header" onclick="toggleMt('${m.id}')">
+        <span class="mt-date">${m.meeting_date}</span>
+        <span class="mt-title">${esc(m.title)}</span>
+        <div>
+          <button class="btn btn-o btn-sm" onclick="event.stopPropagation();openEditMeeting('${m.id}')">編集</button>
+          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delMeeting('${m.id}')">削除</button>
+        </div>
+      </div>
+      <div class="mt-body" id="mt-${m.id}">`;
+    if(m.attendees)h+=`<div class="mt-section"><h3>参加者</h3><pre>${esc(m.attendees)}</pre></div>`;
+    if(m.content)h+=`<div class="mt-section"><h3>議事内容</h3><pre>${esc(m.content)}</pre></div>`;
+    if(m.our_tasks)h+=`<div class="mt-section"><h3>弊社タスク</h3><div class="mt-tasks"><pre>${esc(m.our_tasks)}</pre></div></div>`;
+    if(m.customer_tasks)h+=`<div class="mt-section"><h3>お客様タスク</h3><div class="mt-ctasks"><pre>${esc(m.customer_tasks)}</pre></div></div>`;
+    if(decs.length){
+      h+=`<div class="mt-section"><h3>決定事項（${decs.length}件）</h3>`;
+      decs.forEach(d=>{
+        h+=`<div class="dec-item"><span class="dec-content">${esc(d.content)}</span>`;
+        if(d.category)h+=` <span class="dec-tag">${esc(d.category)}</span>`;
+        if(d.product_code)h+=` <span class="dec-code">${esc(d.product_code)}</span>`;
+        h+=`</div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`</div></div>`;
+  });
+  return h;
+}
+
+function renderDecisions(){
+  let h='<h2 style="font-size:14px;margin-bottom:10px;">決定事項一覧</h2>';
+  if(!DECISIONS.length)return h+'<div class="empty"><p>決定事項がまだありません</p></div>';
+  // 打合せ日付→タイトルのマップ
+  const mtMap={};MEETINGS.forEach(m=>{mtMap[m.id]={date:m.meeting_date,title:m.title};});
+  h+=`<div style="background:#fff;border-radius:var(--r);border:1px solid var(--g200);">`;
+  DECISIONS.forEach(d=>{
+    const mt=mtMap[d.meeting_id]||{};
+    h+=`<div class="dec-item">
+      <span class="dec-date">${d.decided_at}<br><span style="font-size:9px;color:var(--g400);">${esc(mt.title||'')}</span></span>
+      <span class="dec-content">${esc(d.content)}</span>`;
+    if(d.category)h+=` <span class="dec-tag">${esc(d.category)}</span>`;
+    if(d.product_code)h+=` <span class="dec-code">${esc(d.product_code)}</span>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+// ── Toggle meeting body ──
+function toggleMt(id){document.getElementById('mt-'+id)?.classList.toggle('open');}
+
+// ── Switch ──
+async function switchYear(y){CUR_YEAR=y;await loadMeetings();}
+async function switchCust(id){curCust=id;await loadMeetings();}
+
+// ── Meeting CRUD ──
+function openNewMeeting(){
+  document.getElementById('mtTitle').textContent='新規打合せ';
+  document.getElementById('mtSaveBtn').textContent='保存';
+  document.getElementById('mtId').value='';
+  document.getElementById('mtDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mtTitleIn').value='';
+  document.getElementById('mtAttendees').value='';
+  document.getElementById('mtContent').value='';
+  document.getElementById('mtOurTasks').value='';
+  document.getElementById('mtCustTasks').value='';
+  editDecisions=[];
+  renderDecisionEditor();
+  openMo('mtMo');
+}
+
+function openEditMeeting(id){
+  const m=MEETINGS.find(x=>x.id===id);if(!m)return;
+  document.getElementById('mtTitle').textContent='打合せ編集';
+  document.getElementById('mtSaveBtn').textContent='更新';
+  document.getElementById('mtId').value=id;
+  document.getElementById('mtDate').value=m.meeting_date;
+  document.getElementById('mtTitleIn').value=m.title;
+  document.getElementById('mtAttendees').value=m.attendees||'';
+  document.getElementById('mtContent').value=m.content||'';
+  document.getElementById('mtOurTasks').value=m.our_tasks||'';
+  document.getElementById('mtCustTasks').value=m.customer_tasks||'';
+  editDecisions=DECISIONS.filter(d=>d.meeting_id===id).map(d=>({...d}));
+  renderDecisionEditor();
+  openMo('mtMo');
+}
+
+function renderDecisionEditor(){
+  let h=`<div class="mt-section"><h3>決定事項</h3>`;
+  editDecisions.forEach((d,i)=>{
+    h+=`<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;">
+      <input type="text" value="${esc(d.content)}" onchange="editDecisions[${i}].content=this.value" style="flex:1;padding:4px 6px;font-size:11px;border:1px solid var(--g300);border-radius:4px;">
+      <input type="text" value="${esc(d.category||'')}" onchange="editDecisions[${i}].category=this.value" placeholder="タグ" style="width:70px;padding:4px 6px;font-size:10px;border:1px solid var(--g300);border-radius:4px;">
+      <input type="text" value="${esc(d.product_code||'')}" onchange="editDecisions[${i}].product_code=this.value" placeholder="品番" style="width:70px;padding:4px 6px;font-size:10px;border:1px solid var(--g300);border-radius:4px;">
+      <button class="btn btn-d btn-sm" onclick="editDecisions.splice(${i},1);renderDecisionEditor();">×</button>
+    </div>`;
+  });
+  h+=`<div class="dec-add">
+    <input type="text" id="newDecContent" placeholder="決定事項を入力" onkeydown="if(event.key==='Enter')addDecision();">
+    <input type="text" id="newDecTag" placeholder="タグ" style="width:60px;">
+    <input type="text" id="newDecCode" placeholder="品番" style="width:60px;">
+    <button class="btn btn-s btn-sm" onclick="addDecision()">追加</button>
+  </div></div>`;
+  document.getElementById('decisionArea').innerHTML=h;
+}
+
+function addDecision(){
+  const c=document.getElementById('newDecContent').value.trim();if(!c)return;
+  editDecisions.push({content:c,category:document.getElementById('newDecTag').value.trim(),product_code:document.getElementById('newDecCode').value.trim()});
+  renderDecisionEditor();
+}
+
+async function saveMeeting(){
+  const date=document.getElementById('mtDate').value;
+  const title=document.getElementById('mtTitleIn').value.trim();
+  if(!date||!title){toast('日付とタイトルを入力');return;}
+  const editId=document.getElementById('mtId').value;
+  const mtData={
+    customer_id:curCust,year:CUR_YEAR,meeting_date:date,title,
+    attendees:document.getElementById('mtAttendees').value.trim(),
+    content:document.getElementById('mtContent').value.trim(),
+    our_tasks:document.getElementById('mtOurTasks').value.trim(),
+    customer_tasks:document.getElementById('mtCustTasks').value.trim(),
+    updated_by:currentUser.email,updated_at:new Date().toISOString()
+  };
+
+  document.getElementById('savingInd').classList.add('show');
+  let mtId=editId;
+  if(editId){
+    await sb.from('meetings').update(mtData).eq('id',editId);
+    // 既存の決定事項を削除して再挿入
+    await sb.from('decisions').delete().eq('meeting_id',editId);
+  }else{
+    mtId='mt_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4);
+    mtData.id=mtId;mtData.created_by=currentUser.email;mtData.created_at=new Date().toISOString();
+    await sb.from('meetings').insert(mtData);
+  }
+  // 決定事項を保存
+  if(editDecisions.length){
+    const decs=editDecisions.map((d,i)=>({
+      id:d.id||('dc_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4)+i),
+      meeting_id:mtId,customer_id:curCust,year:CUR_YEAR,
+      content:d.content,category:d.category||'',product_code:d.product_code||'',
+      decided_at:date
+    }));
+    await sb.from('decisions').insert(decs);
+  }
+  document.getElementById('savingInd').classList.remove('show');
+  closeMo('mtMo');await loadMeetings();toast(editId?'更新しました':'保存しました');
+}
+
+async function delMeeting(id){
+  const m=MEETINGS.find(x=>x.id===id);if(!m)return;
+  if(!confirm(`「${m.title}」を削除しますか？\n関連する決定事項も削除されます。`))return;
+  await sb.from('decisions').delete().eq('meeting_id',id);
+  await sb.from('meetings').delete().eq('id',id);
+  await loadMeetings();toast('削除しました');
+}
+
+// ── Copy for email ──
+function copyForEmail(){
+  const date=document.getElementById('mtDate').value;
+  const title=document.getElementById('mtTitleIn').value;
+  const attendees=document.getElementById('mtAttendees').value;
+  const content=document.getElementById('mtContent').value;
+  const ourTasks=document.getElementById('mtOurTasks').value;
+  const custTasks=document.getElementById('mtCustTasks').value;
+  const cust=CUSTOMERS.find(c=>c.id===curCust);
+
+  let text=`【議事録】${title}\n`;
+  text+=`日付：${date}\n`;
+  if(cust)text+=`顧客：${cust.name}\n`;
+  if(attendees)text+=`参加者：${attendees}\n`;
+  text+=`\n`;
+  if(content){text+=`■ 議事内容\n${content}\n\n`;}
+  if(ourTasks){text+=`■ 弊社タスク\n${ourTasks}\n\n`;}
+  if(custTasks){text+=`■ お客様タスク\n${custTasks}\n\n`;}
+  if(editDecisions.length){
+    text+=`■ 決定事項\n`;
+    editDecisions.forEach(d=>{text+=`・${d.content}${d.category?' ['+d.category+']':''}${d.product_code?' ('+d.product_code+')':''}\n`;});
+  }
+  navigator.clipboard.writeText(text).then(()=>toast('クリップボードにコピーしました'));
+}
+
+// ── Utils ──
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function openMo(id){document.getElementById(id).classList.add('active');}
+function closeMo(id){document.getElementById(id).classList.remove('active');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)closeMo(el.id);});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mo.active').forEach(el=>closeMo(el.id));});
+document.getElementById('loginPass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+checkAuth();
+</script>
+</body>
+</html>
