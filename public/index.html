@@ -32,6 +32,8 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 .yr-sel{display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.12);border-radius:var(--r);padding:2px 3px;}
 .yr-btn{padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:rgba(255,255,255,.7);border:none;border-radius:4px;}
 .yr-btn:hover{background:rgba(255,255,255,.15);color:#fff;} .yr-btn.active{background:rgba(255,255,255,.25);color:#fff;}
+.yr-del{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--err);color:#fff;font-size:9px;line-height:14px;text-align:center;cursor:pointer;display:none;border:1px solid rgba(255,255,255,.5);}
+.yr-btn:hover .yr-del{display:block;}
 
 /* Buttons */
 .btn{padding:5px 10px;border:none;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:3px;}
@@ -157,11 +159,11 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 <div class="toast" id="toast"></div>
 
 <script>
-const SB_URL='https://awsgpyggrplrvwtlulzr.supabase.co';
-const SB_KEY='sb_publishable_mZpGv83mA_263Guu5oqKmw_sjdx3m7k';
+const SB_URL='https://ootpmvitsggulcqvufsd.supabase.co';
+const SB_KEY='sb_publishable_3trYXswFYXxq5cQji3G81g_woQLl_Xk';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
-let CUSTOMERS=[],MEETINGS=[],DECISIONS=[],QUOTES=[],CO_SETTINGS={},YEARS=[];
+let CUSTOMERS=[],MEETINGS=[],DECISIONS=[],QUOTES=[],PRODUCTS=[],CO_SETTINGS={},YEARS=[];
 let CUR_YEAR=2026,curCust=null,curView='meetings',currentUser=null,saveTimer=null;
 let editDecisions=[];
 
@@ -208,13 +210,17 @@ async function loadMeetings(){
   if(curCust)dq=dq.eq('customer_id',curCust);
   const{data:d}=await dq;
   DECISIONS=d||[];
-  // 見積り取得（会社名で絞り込み）
+  // 見積り＆品番マスター取得（会社名で絞り込み）
   if(coName){
-    const{data:qt}=await sb.from('quotes').select('*').eq('year',CUR_YEAR).eq('company',coName).order('sort_order');
+    const[{data:qt},{data:cs},{data:pr}]=await Promise.all([
+      sb.from('quotes').select('*').eq('year',CUR_YEAR).eq('company',coName).order('sort_order'),
+      sb.from('company_settings').select('*').eq('company',coName).single(),
+      sb.from('products').select('id,company,code,is_parent,category,sort_order').eq('year',CUR_YEAR).eq('company',coName).order('sort_order')
+    ]);
     QUOTES=qt||[];
-    const{data:cs}=await sb.from('company_settings').select('*').eq('company',coName).single();
     CO_SETTINGS=cs||{default_currency:'JPY',default_rate_jpy:20,default_rate_usd:0.14};
-  }else{QUOTES=[];CO_SETTINGS={};}
+    PRODUCTS=pr||[];
+  }else{QUOTES=[];PRODUCTS=[];CO_SETTINGS={};}
   render();
 }
 
@@ -229,9 +235,11 @@ function debounceSaveQuote(q){if(saveTimer)clearTimeout(saveTimer);saveTimer=set
 // ── Render ──
 function render(){
   // Year
-  document.getElementById('yearSel').innerHTML=YEARS.map(y=>
-    `<button class="yr-btn${CUR_YEAR===y?' active':''}" onclick="switchYear(${y})">${y}年度</button>`
-  ).join('');
+  document.getElementById('yearSel').innerHTML=YEARS.map(y=>{
+    const canDel=YEARS.length>1;
+    return`<button class="yr-btn${CUR_YEAR===y?' active':''}" onclick="switchYear(${y})" style="position:relative;">${y}年度${canDel?`<span class="yr-del" onclick="event.stopPropagation();deleteYear(${y})">×</span>`:''}</button>`;
+  }).join('')+
+    `<button class="yr-btn" style="background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.4);" onclick="addYear()">＋</button>`;
   // Customer tabs
   document.getElementById('custTabs').innerHTML=
     CUSTOMERS.map(c=>`<div class="cust-tab${curCust===c.id?' active':''}" onclick="switchCust('${c.id}')">${esc(c.name)}</div>`).join('');
@@ -284,16 +292,34 @@ function renderMeetings(){
 function renderQuotes(){
   const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
   const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
-  const unit=defaultCurrency==='JPY'?'¥':'$';
   const coSymbol='元';
 
   let h=`<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-    <button class="btn btn-p" onclick="addQuote()">＋ 新規見積り</button>
-    <span style="font-size:11px;color:var(--g500);">通貨：<strong>${defaultCurrency}</strong> (会社デフォルト)</span>
+    <button class="btn btn-p" onclick="addCustomQuote()">＋ 独自品番を追加（加飾違い等）</button>
+    <span style="font-size:11px;color:var(--g500);">通貨：<strong>${defaultCurrency}</strong></span>
     <span style="font-size:11px;color:var(--g500);">デフォルトレート: ${defaultCurrency==='JPY'?CO_SETTINGS.default_rate_jpy:CO_SETTINGS.default_rate_usd}</span>
   </div>`;
 
-  if(!QUOTES.length)return h+'<div class="empty"><p>見積りがまだありません</p></div>';
+  // 品番マスターと見積りをマージ
+  // 1. 品番マスターの品番（PRODUCTSから）
+  // 2. 独自品番（quotesだけにあるもの）
+  const linkedQuotes=QUOTES.filter(q=>q.product_id); // 品番マスターに紐付け
+  const customQuotes=QUOTES.filter(q=>!q.product_id); // 独自追加
+
+  const rows=[];
+  PRODUCTS.forEach(p=>{
+    const q=linkedQuotes.find(qt=>qt.product_id===p.id);
+    rows.push({
+      product:p,
+      quote:q||null,
+      isCustom:false
+    });
+  });
+  customQuotes.forEach(q=>{
+    rows.push({product:null,quote:q,isCustom:true});
+  });
+
+  if(!rows.length)return h+'<div class="empty"><p>この会社の品番がまだ登録されていません<br>開発・生産管理アプリで品番を登録してください</p></div>';
 
   h+=`<div class="ss-wrap" style="overflow:auto;background:#fff;border-radius:6px;border:1px solid var(--g200);"><table class="ss" style="border-collapse:collapse;font-size:12px;width:100%;">
     <thead><tr style="background:var(--g100);">
@@ -309,51 +335,80 @@ function renderQuotes(){
       <th style="padding:6px;border:1px solid var(--g200);min-width:50px;">通貨</th>
       <th style="padding:6px;border:1px solid var(--g200);"></th>
     </tr></thead><tbody>`;
-  QUOTES.forEach(q=>{
+  rows.forEach(r=>{
+    const q=r.quote||{};
+    const code=r.isCustom?q.product_code:(r.product.code||'').trim();
+    const isParent=r.product?r.product.is_parent:false;
     const curr=q.currency||defaultCurrency;
     const u=curr==='JPY'?'¥':'$';
     const purchase=(parseFloat(q.factory_quote_cny)||0)*(parseFloat(q.rate)||0);
-    const calc=(parseFloat(q.margin_rate)||0)<100?purchase/(1-(parseFloat(q.margin_rate)||0)/100):0;
-    h+=`<tr>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="text" value="${esc(q.product_code||'')}" onchange="updQ('${q.id}','product_code',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;"></td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="text" value="${esc(q.description||'')}" onchange="updQ('${q.id}','description',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;"></td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.factory_quote_cny||0}" onchange="updQ('${q.id}','factory_quote_cny',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;"> ${coSymbol}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.0001" value="${q.rate||0}" onchange="updQ('${q.id}','rate',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;"></td>
+    const calc=(parseFloat(q.margin_rate)||0)<100&&(parseFloat(q.margin_rate)||0)>0?purchase/(1-(parseFloat(q.margin_rate)||0)/100):purchase;
+    const qid=q.id||(r.product?`new_${r.product.id}`:`new_${Math.random()}`);
+    const rowStyle=isParent?'background:#f3f4f6;font-weight:700;':(r.isCustom?'background:#fef3c7;':'');
+    const productRef=r.product?`data-pid="${r.product.id}"`:'';
+    h+=`<tr style="${rowStyle}" ${productRef}>
+      <td style="padding:3px;border:1px solid var(--g200);font-weight:${isParent?'700':'500'};">${r.isCustom?`<input type="text" value="${esc(code)}" onchange="updQ2('${qid}','${r.product?.id||''}','product_code',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;">`:esc(code)}${r.isCustom?'<br><span style="font-size:9px;color:#92400e;">独自追加</span>':''}</td>
+      <td style="padding:3px;border:1px solid var(--g200);"><input type="text" value="${esc(q.description||'')}" onchange="updQ2('${qid}','${r.product?.id||''}','description',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;"></td>
+      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.factory_quote_cny||''}" onchange="updQ2('${qid}','${r.product?.id||''}','factory_quote_cny',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> ${coSymbol}</td>
+      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.0001" value="${q.rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','rate',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"></td>
       <td style="padding:6px;border:1px solid var(--g200);background:#f9fafb;text-align:right;color:var(--g600);font-size:11px;">${u}${purchase.toFixed(2)}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.1" value="${q.margin_rate||0}" onchange="updQ('${q.id}','margin_rate',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;"> %</td>
+      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.1" value="${q.margin_rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','margin_rate',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> %</td>
       <td style="padding:6px;border:1px solid var(--g200);background:#f9fafb;text-align:right;color:var(--g600);font-size:11px;">${u}${calc.toFixed(2)}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.wholesale_price||0}" onchange="updQ('${q.id}','wholesale_price',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;"> ${u}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.wholesale_with_sub||0}" onchange="updQ('${q.id}','wholesale_with_sub',this.value)" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;"> ${u}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><select onchange="updQ('${q.id}','currency',this.value)" style="width:100%;padding:4px;border:none;font-size:11px;outline:none;"><option${curr==='JPY'?' selected':''}>JPY</option><option${curr==='USD'?' selected':''}>USD</option></select></td>
-      <td style="padding:3px;border:1px solid var(--g200);"><button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button></td>
+      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.wholesale_price||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_price',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> ${u}</td>
+      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom})" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> ${u}</td>
+      <td style="padding:3px;border:1px solid var(--g200);"><select onchange="updQ2('${qid}','${r.product?.id||''}','currency',this.value,${r.isCustom})" style="width:100%;padding:4px;border:none;font-size:11px;outline:none;"><option${curr==='JPY'?' selected':''}>JPY</option><option${curr==='USD'?' selected':''}>USD</option></select></td>
+      <td style="padding:3px;border:1px solid var(--g200);">${r.isCustom?`<button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button>`:''}</td>
     </tr>`;
   });
   h+=`</tbody></table></div>`;
   return h;
 }
 
-async function addQuote(){
+// 見積り更新（品番リンク型）
+async function updQ2(qid,productId,field,val,isCustom){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
+  const defaultRate=defaultCurrency==='JPY'?(CO_SETTINGS.default_rate_jpy||20):(CO_SETTINGS.default_rate_usd||0.14);
+  let q=QUOTES.find(x=>x.id===qid);
+  const isNew=!q;
+  if(isNew){
+    // 新規作成
+    q={
+      id:'q_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
+      company:coName,year:CUR_YEAR,
+      product_id:isCustom?null:productId,
+      product_code:'',description:'',
+      factory_quote_cny:0,rate:defaultRate,margin_rate:0,
+      wholesale_price:0,wholesale_with_sub:0,
+      currency:defaultCurrency,sort_order:QUOTES.length,
+      created_at:new Date().toISOString()
+    };
+    QUOTES.push(q);
+  }
+  q[field]=['product_code','description','currency'].includes(field)?val:(parseFloat(val)||0);
+  q.updated_by=currentUser.email;q.updated_at=new Date().toISOString();
+  await sb.from('quotes').upsert(q);
+  render();
+}
+
+async function addCustomQuote(){
   const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
   if(!coName){toast('会社を選択してください');return;}
   const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
   const defaultRate=defaultCurrency==='JPY'?(CO_SETTINGS.default_rate_jpy||20):(CO_SETTINGS.default_rate_usd||0.14);
-  const maxSort=QUOTES.length?Math.max(...QUOTES.map(x=>x.sort_order||0))+1:0;
+  const code=prompt('品番を入力（加飾違い等の独自品番）:','');
+  if(!code)return;
   const q={
     id:'q_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
-    company:coName,year:CUR_YEAR,product_code:'',description:'',
-    factory_quote_cny:0,rate:defaultRate,margin_rate:30,
+    company:coName,year:CUR_YEAR,
+    product_id:null,product_code:code,description:'',
+    factory_quote_cny:0,rate:defaultRate,margin_rate:0,
     wholesale_price:0,wholesale_with_sub:0,
-    currency:defaultCurrency,sort_order:maxSort,
+    currency:defaultCurrency,sort_order:QUOTES.length,
     created_at:new Date().toISOString()
   };
   await sb.from('quotes').insert(q);
   await loadMeetings();toast('追加しました');
-}
-
-async function updQ(id,field,val){
-  const q=QUOTES.find(x=>x.id===id);if(!q)return;
-  q[field]=['product_code','description','currency'].includes(field)?val:parseFloat(val)||0;
-  debounceSaveQuote(q);render();
 }
 
 async function delQuote(id){
@@ -386,6 +441,32 @@ function toggleMt(id){document.getElementById('mt-'+id)?.classList.toggle('open'
 
 // ── Switch ──
 async function switchYear(y){CUR_YEAR=y;await loadMeetings();}
+
+async function addYear(){
+  const next=YEARS.length?YEARS[YEARS.length-1]+1:new Date().getFullYear();
+  const input=prompt('追加する年度を入力（西暦4桁）:',next);
+  if(!input)return;
+  const yr=parseInt(input);
+  if(isNaN(yr)||yr<2000||yr>2100){toast('正しい年度を入力してください');return;}
+  if(YEARS.includes(yr)){toast(`${yr}年度は既に存在します`);return;}
+  await sb.from('years').insert({year:yr});
+  YEARS.push(yr);YEARS.sort();
+  CUR_YEAR=yr;
+  await loadMeetings();toast(`${yr}年度を追加しました`);
+}
+
+async function deleteYear(yr){
+  if(YEARS.length<=1){toast('最後の年度は削除できません');return;}
+  if(!confirm(`${yr}年度のデータを完全に削除しますか？\n議事録・決定事項・見積りも全て削除されます。`))return;
+  // 関連データを削除
+  await sb.from('decisions').delete().eq('year',yr);
+  await sb.from('meetings').delete().eq('year',yr);
+  await sb.from('quotes').delete().eq('year',yr);
+  await sb.from('years').delete().eq('year',yr);
+  YEARS=YEARS.filter(y=>y!==yr);
+  if(CUR_YEAR===yr)CUR_YEAR=YEARS[YEARS.length-1];
+  await loadMeetings();toast(`${yr}年度を削除しました`);
+}
 async function switchCust(id){curCust=id;await loadMeetings();}
 
 // ── Meeting CRUD ──
