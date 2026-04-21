@@ -186,7 +186,14 @@ async function doSignup(){
 }
 async function doLogout(){await sb.auth.signOut();location.reload();}
 function showLoginErr(m){const e=document.getElementById('loginErr');e.textContent=m;e.style.display='block';}
-function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appScreen').style.display='block';document.getElementById('userInfo').textContent=currentUser.email;loadData();}
+function isAdmin(){return currentUser?.user_metadata?.role==='admin'||currentUser?.app_metadata?.role==='admin';}
+function showApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appScreen').style.display='block';
+  const roleLabel=isAdmin()?' 👑':'';
+  document.getElementById('userInfo').textContent=currentUser.email+roleLabel;
+  loadData();
+}
 
 // ── Data ──
 async function loadData(){
@@ -244,15 +251,21 @@ function render(){
   document.getElementById('custTabs').innerHTML=
     CUSTOMERS.map(c=>`<div class="cust-tab${curCust===c.id?' active':''}" onclick="switchCust('${c.id}')">${esc(c.name)}</div>`).join('');
   // Sub tabs
-  document.getElementById('subTabs').innerHTML=
+  let subTabsHtml=
     `<div class="sub-tab${curView==='meetings'?' active':''}" onclick="curView='meetings';render();">打合せ一覧</div>`+
-    `<div class="sub-tab${curView==='decisions'?' active':''}" onclick="curView='decisions';render();">決定事項一覧</div>`+
-    `<div class="sub-tab${curView==='quotes'?' active':''}" onclick="curView='quotes';render();">見積り管理</div>`;
+    `<div class="sub-tab${curView==='decisions'?' active':''}" onclick="curView='decisions';render();">決定事項一覧</div>`;
+  if(isAdmin()){
+    subTabsHtml+=`<div class="sub-tab${curView==='quotes'?' active':''}" onclick="curView='quotes';render();">💰 見積り管理</div>`;
+  }
+  document.getElementById('subTabs').innerHTML=subTabsHtml;
+
+  // 非管理職が見積りタブを見ている場合、打合せに強制変更
+  if(curView==='quotes'&&!isAdmin())curView='meetings';
 
   const ct=document.getElementById('content');
   if(curView==='meetings')ct.innerHTML=renderMeetings();
   else if(curView==='decisions')ct.innerHTML=renderDecisions();
-  else if(curView==='quotes')ct.innerHTML=renderQuotes();
+  else if(curView==='quotes'&&isAdmin())ct.innerHTML=renderQuotes();
 }
 
 function renderMeetings(){
