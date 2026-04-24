@@ -42,17 +42,61 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 .btn-sm{padding:3px 8px;font-size:10px;} .btn-s{background:var(--ok);color:#fff;}
 
 /* Tabs - Customer */
-.cust-tabs{background:#fff;border-bottom:2px solid var(--g200);display:flex;padding:0 16px;position:sticky;top:34px;z-index:99;}
-.cust-tab{padding:8px 18px;font-size:12px;font-weight:600;color:var(--g500);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;}
-.cust-tab:hover{color:var(--g700);background:var(--g50);} .cust-tab.active{color:var(--pri);border-bottom-color:var(--pri);}
-.cust-tab.tab-all{font-style:italic;}
+.cust-tabs{background:#fff;border-bottom:2px solid var(--g300);display:flex;padding:0 16px;position:sticky;top:34px;z-index:99;box-shadow:0 2px 4px rgba(0,0,0,.05);}
+.cust-tab{padding:12px 24px;font-size:15px;font-weight:700;color:var(--g500);cursor:pointer;border-bottom:4px solid transparent;margin-bottom:-2px;white-space:nowrap;letter-spacing:.5px;}
+.cust-tab:hover{color:var(--g700);background:var(--g50);} .cust-tab.active{color:var(--pri);border-bottom-color:var(--pri);background:var(--pri-l);}
 
 /* Sub tabs */
-.sub-tabs{background:var(--g50);border-bottom:1px solid var(--g200);display:flex;padding:0 16px;}
-.sub-tab{padding:6px 14px;font-size:11px;font-weight:600;color:var(--g500);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
-.sub-tab:hover{color:var(--g700);} .sub-tab.active{color:var(--pri-d);border-bottom-color:var(--pri-d);}
+.sub-tabs{background:var(--g50);border-bottom:1px solid var(--g300);display:flex;padding:0 16px;gap:2px;}
+.sub-tab{padding:10px 18px;font-size:13px;font-weight:700;color:var(--g500);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;}
+.sub-tab:hover{color:var(--g700);background:var(--g100);} .sub-tab.active{color:var(--pri-d);border-bottom-color:var(--pri-d);background:#fff;}
 
-.wrap{padding:12px 16px;max-width:1200px;margin:0 auto;}
+.wrap{padding:12px 16px;max-width:1400px;margin:0 auto;}
+
+/* Quote table - 視認性改善 */
+.qt-wrap{overflow:auto;background:#fff;border-radius:8px;border:2px solid var(--g300);box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.qt{border-collapse:collapse;width:100%;font-size:13px;}
+.qt thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:10px 8px;border:1px solid #9ca3af;font-weight:800;color:#1f2937;font-size:12px;letter-spacing:.3px;text-align:center;position:sticky;top:0;z-index:3;}
+.qt thead th .unit{font-size:10px;font-weight:600;color:var(--g500);}
+.qt thead th.calc-th{background:linear-gradient(to bottom,#f3f4f6,#e5e7eb);color:var(--g600);}
+.qt tbody td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle;font-size:12px;}
+
+/* 品番セル */
+.qt-code-cell{background:#dbeafe !important;border-left:4px solid #2563eb !important;font-weight:700;min-width:110px;padding:8px !important;vertical-align:middle !important;}
+.qt-code{font-size:13px;font-weight:800;color:#1e3a8a;}
+.qt-code-in{width:100%;padding:4px;border:1px solid transparent;font-size:12px;font-weight:700;outline:none;background:transparent;}
+.qt-code-in:focus{border-color:var(--pri);background:#fff;}
+.qt-custom-badge{font-size:9px;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:3px;display:inline-block;margin-top:3px;font-weight:600;}
+
+/* 行色分け */
+.qt-main td{background:#fff;}
+.qt-sub td{background:#fef9e7;}
+.qt-sub td:first-child{background:#dbeafe !important;}
+.qt-parent td{background:#f3f4f6;}
+.qt-custom td{background:#fef3c7;}
+.qt-row:hover td{background:#eff6ff !important;}
+.qt-row:hover .qt-code-cell{background:#bfdbfe !important;}
+
+/* カテゴリ */
+.qt-cat{font-weight:600;color:var(--g700);text-align:center;}
+.qt-cat-sub{color:#92400e;font-weight:700;}
+
+/* 入力フィールド */
+.qt-in{width:100%;padding:5px 6px;border:1px solid transparent;border-radius:3px;font-size:12px;outline:none;background:transparent;font-weight:500;}
+.qt-in:hover{border-color:var(--g400);background:#fff;}
+.qt-in:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 2px rgba(30,64,175,.15);}
+.qt-num{text-align:right;font-variant-numeric:tabular-nums;}
+.qt-in-pre{padding-left:20px;}
+.qt-prefix{position:relative;left:6px;color:var(--g500);font-weight:600;font-size:11px;pointer-events:none;margin-right:-16px;}
+.qt-suffix{margin-left:3px;color:var(--g500);font-weight:600;font-size:11px;}
+.qt-sel{width:100%;padding:5px 4px;border:1px solid transparent;border-radius:3px;font-size:11px;font-weight:700;outline:none;background:transparent;color:var(--pri-d);cursor:pointer;}
+.qt-sel:hover{border-color:var(--g400);background:#fff;}
+
+/* 計算値（自動） */
+.qt-calc{background:#f9fafb !important;text-align:right;color:var(--g700);font-weight:700;font-variant-numeric:tabular-nums;padding:8px !important;font-size:12px;}
+
+/* 無効セル */
+.qt-disabled{background:#f3f4f6 !important;color:var(--g400);text-align:center;}
 
 /* Meeting list */
 .mt-card{background:#fff;border-radius:var(--r);border:1px solid var(--g200);margin-bottom:10px;overflow:hidden;}
@@ -332,48 +376,88 @@ function renderQuotes(){
 
   if(!rows.length)return h+'<div class="empty"><p>この会社の品番がまだ登録されていません<br>開発・生産管理アプリで品番を登録してください</p></div>';
 
-  h+=`<div class="ss-wrap" style="overflow:auto;background:#fff;border-radius:6px;border:1px solid var(--g200);"><table class="ss" style="border-collapse:collapse;font-size:12px;width:100%;">
-    <thead><tr style="background:var(--g100);">
-      <th style="padding:6px;border:1px solid var(--g200);min-width:100px;">品番</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:90px;">カテゴリ</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:80px;">工場見積(元)</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:70px;">レート</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:80px;background:#f3f4f6;">仕入値</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:60px;">粗利率%</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:80px;background:#f3f4f6;">計算値</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:80px;">卸値</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:90px;">副資材込</th>
-      <th style="padding:6px;border:1px solid var(--g200);min-width:50px;">通貨</th>
-      <th style="padding:6px;border:1px solid var(--g200);"></th>
-    </tr></thead><tbody>`;
+  // 品番ごとにグループ化（品番セルをrowspanで結合）
+  const productGroups=[];
+  let curGroup=null;
   rows.forEach(r=>{
-    const q=r.quote||{};
-    const code=r.isCustom?q.product_code:(r.product.code||'').trim();
-    const isParent=r.product?r.product.is_parent:false;
-    const curr=q.currency||defaultCurrency;
-    const u=curr==='JPY'?'¥':'$';
-    const purchase=(parseFloat(q.factory_quote_cny)||0)*(parseFloat(q.rate)||0);
-    const calc=(parseFloat(q.margin_rate)||0)<100&&(parseFloat(q.margin_rate)||0)>0?purchase/(1-(parseFloat(q.margin_rate)||0)/100):purchase;
-    const qid=q.id||(r.product?`new_${r.product.id}_${r.type}`:`new_${Math.random()}`);
-    const isSub=r.type==='sub';
-    const rowStyle=isParent&&!isSub?'background:#f3f4f6;font-weight:700;':(r.isCustom?'background:#fef3c7;':(isSub?'background:#fef7e0;':''));
-    const productRef=r.product?`data-pid="${r.product.id}"`:'';
-    const qtype=r.type;
-    // 品番列: メイン行のみ表示（副資材行はブランク）
-    const codeCell=isSub?'':(r.isCustom?`<input type="text" value="${esc(code)}" onchange="updQ2('${qid}','${r.product?.id||''}','product_code',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;">`:esc(code))+(r.isCustom&&!isSub?'<br><span style="font-size:9px;color:#92400e;">独自追加</span>':'');
-    h+=`<tr style="${rowStyle}" ${productRef}>
-      <td style="padding:3px;border:1px solid var(--g200);font-weight:${isParent?'700':'500'};">${codeCell}</td>
-      <td style="padding:3px;border:1px solid var(--g200);font-size:11px;color:${isSub?'#92400e':'var(--g700)'};font-weight:${isSub?'600':'500'};">${esc(r.category)}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.factory_quote_cny||''}" onchange="updQ2('${qid}','${r.product?.id||''}','factory_quote_cny',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> ${coSymbol}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.0001" value="${q.rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','rate',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"></td>
-      <td style="padding:6px;border:1px solid var(--g200);background:#f9fafb;text-align:right;color:var(--g600);font-size:11px;">${u}${purchase.toFixed(2)}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.1" value="${q.margin_rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','margin_rate',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> %</td>
-      <td style="padding:6px;border:1px solid var(--g200);background:#f9fafb;text-align:right;color:var(--g600);font-size:11px;">${u}${calc.toFixed(2)}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><input type="number" step="0.01" value="${q.wholesale_price||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_price',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> ${u}</td>
-      <td style="padding:3px;border:1px solid var(--g200);${isSub?'background:#f3f4f6;':''}">${isSub?'-':`<input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:1px solid transparent;font-size:11px;outline:none;text-align:right;" placeholder="0"> ${u}`}</td>
-      <td style="padding:3px;border:1px solid var(--g200);"><select onchange="updQ2('${qid}','${r.product?.id||''}','currency',this.value,${r.isCustom},'${qtype}')" style="width:100%;padding:4px;border:none;font-size:11px;outline:none;"><option${curr==='JPY'?' selected':''}>JPY</option><option${curr==='USD'?' selected':''}>USD</option></select></td>
-      <td style="padding:3px;border:1px solid var(--g200);">${r.isCustom&&!isSub?`<button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button>`:''}</td>
-    </tr>`;
+    const key=r.isCustom?(r.quote?.id||'custom'):(r.product?.id||'');
+    if(!curGroup||curGroup.key!==key){
+      curGroup={key,rows:[r]};
+      productGroups.push(curGroup);
+    }else{
+      curGroup.rows.push(r);
+    }
+  });
+
+  h+=`<div class="qt-wrap"><table class="qt">
+    <thead><tr>
+      <th style="min-width:110px;">品番</th>
+      <th style="min-width:100px;">カテゴリ</th>
+      <th style="min-width:110px;">工場見積<br><span class="unit">(元)</span></th>
+      <th style="min-width:90px;">レート</th>
+      <th class="calc-th" style="min-width:100px;">仕入値</th>
+      <th style="min-width:80px;">粗利率</th>
+      <th class="calc-th" style="min-width:100px;">計算値</th>
+      <th style="min-width:110px;">卸値</th>
+      <th style="min-width:120px;">副資材込</th>
+      <th style="min-width:65px;">通貨</th>
+      <th style="min-width:40px;"></th>
+    </tr></thead><tbody>`;
+
+  productGroups.forEach((grp,gIdx)=>{
+    grp.rows.forEach((r,rIdx)=>{
+      const q=r.quote||{};
+      const code=r.isCustom?q.product_code:(r.product.code||'').trim();
+      const isParent=r.product?r.product.is_parent:false;
+      const curr=q.currency||defaultCurrency;
+      const u=curr==='JPY'?'¥':'$';
+      const purchase=(parseFloat(q.factory_quote_cny)||0)*(parseFloat(q.rate)||0);
+      const calc=(parseFloat(q.margin_rate)||0)<100&&(parseFloat(q.margin_rate)||0)>0?purchase/(1-(parseFloat(q.margin_rate)||0)/100):purchase;
+      const qid=q.id||(r.product?`new_${r.product.id}_${r.type}`:`new_${Math.random()}`);
+      const isSub=r.type==='sub';
+      const qtype=r.type;
+      const productRef=r.product?`data-pid="${r.product.id}"`:'';
+
+      // ROW色分け
+      let rowCls='qt-row';
+      if(rIdx===0)rowCls+=' qt-main';
+      if(isSub)rowCls+=' qt-sub';
+      if(r.isCustom&&!isSub)rowCls+=' qt-custom';
+      if(isParent&&!isSub)rowCls+=' qt-parent';
+
+      h+=`<tr class="${rowCls}" ${productRef}>`;
+
+      // 品番セル: グループの先頭行のみ表示（rowspan=行数）
+      if(rIdx===0){
+        const codeContent=r.isCustom?`<input type="text" value="${esc(code)}" onchange="updQ2('${qid}','${r.product?.id||''}','product_code',this.value,${r.isCustom},'${qtype}')" class="qt-code-in">`:`<span class="qt-code">${esc(code)}</span>`;
+        const customBadge=r.isCustom?'<div class="qt-custom-badge">独自追加</div>':'';
+        h+=`<td class="qt-code-cell" rowspan="${grp.rows.length}">${codeContent}${customBadge}</td>`;
+      }
+
+      // カテゴリ
+      h+=`<td class="qt-cat ${isSub?'qt-cat-sub':''}">${esc(r.category)}</td>`;
+      // 工場見積
+      h+=`<td><input type="number" step="0.01" value="${q.factory_quote_cny||''}" onchange="updQ2('${qid}','${r.product?.id||''}','factory_quote_cny',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;
+      // レート
+      h+=`<td><input type="number" step="0.0001" value="${q.rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','rate',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;
+      // 仕入値（自動）
+      h+=`<td class="qt-calc">${u}${purchase.toLocaleString(undefined,{maximumFractionDigits:2})}</td>`;
+      // 粗利率
+      h+=`<td><input type="number" step="0.1" value="${q.margin_rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','margin_rate',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"><span class="qt-suffix">%</span></td>`;
+      // 計算値（自動）
+      h+=`<td class="qt-calc">${u}${calc.toLocaleString(undefined,{maximumFractionDigits:2})}</td>`;
+      // 卸値
+      h+=`<td><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_price||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_price',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num qt-in-pre" placeholder="0"></td>`;
+      // 副資材込
+      if(isSub){h+=`<td class="qt-disabled">-</td>`;}
+      else{h+=`<td><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num qt-in-pre" placeholder="0"></td>`;}
+      // 通貨
+      h+=`<td><select onchange="updQ2('${qid}','${r.product?.id||''}','currency',this.value,${r.isCustom},'${qtype}')" class="qt-sel"><option${curr==='JPY'?' selected':''}>JPY</option><option${curr==='USD'?' selected':''}>USD</option></select></td>`;
+      // 削除
+      h+=`<td>${r.isCustom&&!isSub?`<button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button>`:''}</td>`;
+
+      h+=`</tr>`;
+    });
   });
   h+=`</tbody></table></div>`;
   return h;
