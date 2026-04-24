@@ -525,11 +525,12 @@ async function updateCompanyRate(val){
 async function applyRateToAll(){
   const cur=CO_SETTINGS.default_currency||'JPY';
   const rate=cur==='JPY'?(CO_SETTINGS.default_rate_jpy||20):(CO_SETTINGS.default_rate_usd||0.14);
-  if(!confirm(`全ての見積りのレートを ${rate} (${cur}) に一括更新しますか？`))return;
-  for(const q of QUOTES){
-    q.rate=rate;q.currency=cur;
-    await sb.from('quotes').upsert(q);
-  }
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  if(!coName)return;
+  if(!confirm(`${coName}の全見積りのレートを ${rate} (${cur}) に一括更新しますか？\n※他の入力値（工場見積・粗利率・卸値等）は変更されません`))return;
+  // UPDATEで rate と currency のみ変更
+  const{error}=await sb.from('quotes').update({rate:rate,currency:cur}).eq('company',coName).eq('year',CUR_YEAR);
+  if(error){toast('エラー: '+error.message);return;}
   await loadMeetings();toast('全見積りのレートを更新しました');
 }
 
