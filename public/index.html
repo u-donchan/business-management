@@ -58,45 +58,51 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 .qt{border-collapse:collapse;width:100%;font-size:13px;}
 .qt thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:10px 8px;border:1px solid #9ca3af;font-weight:800;color:#1f2937;font-size:12px;letter-spacing:.3px;text-align:center;position:sticky;top:0;z-index:3;}
 .qt thead th .unit{font-size:10px;font-weight:600;color:var(--g500);}
-.qt thead th.calc-th{background:linear-gradient(to bottom,#f3f4f6,#e5e7eb);color:var(--g600);}
-.qt tbody td{padding:4px 6px;border:1px solid #d1d5db;vertical-align:middle;font-size:12px;}
+.qt tbody td{padding:6px 8px;border:1px solid #d1d5db;vertical-align:middle;font-size:13px;}
 
-/* 品番セル */
-.qt-code-cell{background:#dbeafe !important;border-left:4px solid #2563eb !important;font-weight:700;min-width:110px;padding:8px !important;vertical-align:middle !important;}
-.qt-code{font-size:13px;font-weight:800;color:#1e3a8a;}
-.qt-code-in{width:100%;padding:4px;border:1px solid transparent;font-size:12px;font-weight:700;outline:none;background:transparent;}
+/* 品番セル（控えめに）*/
+.qt-code-cell{background:#f9fafb;border-left:2px solid var(--g400);font-weight:600;min-width:110px;padding:8px !important;vertical-align:middle !important;color:var(--g700);}
+.qt-code{font-size:12px;font-weight:700;color:var(--g700);}
+.qt-code-in{width:100%;padding:4px;border:1px solid transparent;font-size:12px;font-weight:600;outline:none;background:transparent;color:var(--g700);}
 .qt-code-in:focus{border-color:var(--pri);background:#fff;}
 .qt-custom-badge{font-size:9px;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:3px;display:inline-block;margin-top:3px;font-weight:600;}
 
-/* 行色分け */
-.qt-main td{background:#fff;}
+/* 行色分け（行全体に統一の色）*/
+.qt-main td{background:#ffffff;}
 .qt-sub td{background:#fef9e7;}
-.qt-sub td:first-child{background:#dbeafe !important;}
-.qt-parent td{background:#f3f4f6;}
+.qt-parent.qt-main td{background:#f3f4f6;}
 .qt-custom td{background:#fef3c7;}
-.qt-row:hover td{background:#eff6ff !important;}
-.qt-row:hover .qt-code-cell{background:#bfdbfe !important;}
+.qt-row:hover td{background:#dbeafe !important;}
 
 /* カテゴリ */
-.qt-cat{font-weight:600;color:var(--g700);text-align:center;}
+.qt-cat{font-weight:700;color:var(--g700);text-align:center;font-size:12px;}
 .qt-cat-sub{color:#92400e;font-weight:700;}
 
-/* 入力フィールド */
-.qt-in{width:100%;padding:5px 6px;border:1px solid transparent;border-radius:3px;font-size:12px;outline:none;background:transparent;font-weight:500;}
-.qt-in:hover{border-color:var(--g400);background:#fff;}
-.qt-in:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 2px rgba(30,64,175,.15);}
+/* 入力フィールド（金額を強調） */
+.qt-in{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:4px;font-size:13px;outline:none;background:transparent;font-weight:600;color:#111827;}
+.qt-in:hover{border-color:var(--g400);background:rgba(255,255,255,.8);}
+.qt-in:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 2px rgba(30,64,175,.2);}
 .qt-num{text-align:right;font-variant-numeric:tabular-nums;}
-.qt-in-pre{padding-left:20px;}
-.qt-prefix{position:relative;left:6px;color:var(--g500);font-weight:600;font-size:11px;pointer-events:none;margin-right:-16px;}
-.qt-suffix{margin-left:3px;color:var(--g500);font-weight:600;font-size:11px;}
-.qt-sel{width:100%;padding:5px 4px;border:1px solid transparent;border-radius:3px;font-size:11px;font-weight:700;outline:none;background:transparent;color:var(--pri-d);cursor:pointer;}
+/* 金額入力のセル（全体を強調） */
+.qt-money-cell{position:relative;padding:2px 6px !important;}
+.qt-money-cell .qt-in{font-size:14px;font-weight:700;color:#065f46;padding-left:22px;}
+.qt-money-cell .qt-prefix{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:12px;pointer-events:none;}
+/* % 付き入力 */
+.qt-pct-cell{position:relative;padding:2px 6px !important;}
+.qt-pct-cell .qt-in{padding-right:22px;}
+.qt-pct-cell .qt-suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:12px;pointer-events:none;}
+
+.qt-sel{width:100%;padding:5px 4px;border:1px solid transparent;border-radius:4px;font-size:12px;font-weight:700;outline:none;background:transparent;color:var(--pri-d);cursor:pointer;text-align:center;}
 .qt-sel:hover{border-color:var(--g400);background:#fff;}
 
-/* 計算値（自動） */
-.qt-calc{background:#f9fafb !important;text-align:right;color:var(--g700);font-weight:700;font-variant-numeric:tabular-nums;padding:8px !important;font-size:12px;}
+/* 計算値（自動・太字だが背景は行に合わせる） */
+.qt-calc{text-align:right;color:var(--g500);font-weight:700;font-variant-numeric:tabular-nums;padding:8px !important;font-size:13px;font-style:italic;}
+
+/* 卸値・副資材込（メイン金額として強調） */
+.qt-main-money .qt-in{font-size:15px !important;font-weight:800 !important;color:#1e3a8a !important;}
 
 /* 無効セル */
-.qt-disabled{background:#f3f4f6 !important;color:var(--g400);text-align:center;}
+.qt-disabled{color:var(--g400);text-align:center;}
 
 /* Meeting list */
 .mt-card{background:#fff;border-radius:var(--r);border:1px solid var(--g200);margin-bottom:10px;overflow:hidden;}
@@ -351,10 +357,17 @@ function renderQuotes(){
   const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
   const coSymbol='元';
 
-  let h=`<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+  const curRate=defaultCurrency==='JPY'?(CO_SETTINGS.default_rate_jpy||20):(CO_SETTINGS.default_rate_usd||0.14);
+  let h=`<div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#f0f4ff;border-radius:6px;border:1px solid #c7d2fe;">
     <button class="btn btn-p" onclick="addCustomQuote()">＋ 独自品番を追加（加飾違い等）</button>
-    <span style="font-size:11px;color:var(--g500);">通貨：<strong>${defaultCurrency}</strong></span>
-    <span style="font-size:11px;color:var(--g500);">デフォルトレート: ${defaultCurrency==='JPY'?CO_SETTINGS.default_rate_jpy:CO_SETTINGS.default_rate_usd}</span>
+    <span style="font-size:12px;color:var(--g700);font-weight:600;">通貨:</span>
+    <select onchange="updateCompanyCurrency(this.value)" style="padding:4px 8px;font-size:12px;font-weight:700;border:1px solid var(--g300);border-radius:4px;background:#fff;color:var(--pri-d);">
+      <option${defaultCurrency==='JPY'?' selected':''}>JPY</option>
+      <option${defaultCurrency==='USD'?' selected':''}>USD</option>
+    </select>
+    <span style="font-size:12px;color:var(--g700);font-weight:600;">レート (元→${defaultCurrency}):</span>
+    <input type="number" step="0.0001" value="${curRate}" onchange="updateCompanyRate(this.value)" style="padding:4px 8px;font-size:12px;font-weight:700;border:1px solid var(--g300);border-radius:4px;width:100px;text-align:right;background:#fff;">
+    <button class="btn btn-o btn-sm" onclick="applyRateToAll()" title="現在の全見積りにこのレートを適用">全見積りに反映</button>
   </div>`;
 
   // 品番マスター × 2行（カテゴリ + 副資材）+ 独自品番
@@ -442,15 +455,15 @@ function renderQuotes(){
       h+=`<td><input type="number" step="0.0001" value="${q.rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','rate',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;
       // 仕入値（自動）
       h+=`<td class="qt-calc">${u}${purchase.toLocaleString(undefined,{maximumFractionDigits:2})}</td>`;
-      // 粗利率
-      h+=`<td><input type="number" step="0.1" value="${q.margin_rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','margin_rate',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"><span class="qt-suffix">%</span></td>`;
+      // 粗利率（% を同じセルに）
+      h+=`<td class="qt-pct-cell"><input type="number" step="0.1" value="${q.margin_rate||''}" onchange="updQ2('${qid}','${r.product?.id||''}','margin_rate',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"><span class="qt-suffix">%</span></td>`;
       // 計算値（自動）
       h+=`<td class="qt-calc">${u}${calc.toLocaleString(undefined,{maximumFractionDigits:2})}</td>`;
-      // 卸値
-      h+=`<td><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_price||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_price',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num qt-in-pre" placeholder="0"></td>`;
+      // 卸値（通貨記号を同じセルに、強調）
+      h+=`<td class="qt-money-cell qt-main-money"><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_price||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_price',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;
       // 副資材込
       if(isSub){h+=`<td class="qt-disabled">-</td>`;}
-      else{h+=`<td><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num qt-in-pre" placeholder="0"></td>`;}
+      else{h+=`<td class="qt-money-cell qt-main-money"><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;}
       // 通貨
       h+=`<td><select onchange="updQ2('${qid}','${r.product?.id||''}','currency',this.value,${r.isCustom},'${qtype}')" class="qt-sel"><option${curr==='JPY'?' selected':''}>JPY</option><option${curr==='USD'?' selected':''}>USD</option></select></td>`;
       // 削除
@@ -488,6 +501,36 @@ async function updQ2(qid,productId,field,val,isCustom,qtype){
   q.updated_by=currentUser.email;q.updated_at=new Date().toISOString();
   await sb.from('quotes').upsert(q);
   render();
+}
+
+async function updateCompanyCurrency(val){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  if(!coName)return;
+  CO_SETTINGS.default_currency=val;
+  await sb.from('company_settings').upsert({company:coName,default_currency:val,default_rate_jpy:CO_SETTINGS.default_rate_jpy||20,default_rate_usd:CO_SETTINGS.default_rate_usd||0.14});
+  render();
+}
+
+async function updateCompanyRate(val){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  if(!coName)return;
+  const rate=parseFloat(val)||0;
+  const cur=CO_SETTINGS.default_currency||'JPY';
+  if(cur==='JPY')CO_SETTINGS.default_rate_jpy=rate;
+  else CO_SETTINGS.default_rate_usd=rate;
+  await sb.from('company_settings').upsert({company:coName,default_currency:cur,default_rate_jpy:CO_SETTINGS.default_rate_jpy||20,default_rate_usd:CO_SETTINGS.default_rate_usd||0.14});
+  render();
+}
+
+async function applyRateToAll(){
+  const cur=CO_SETTINGS.default_currency||'JPY';
+  const rate=cur==='JPY'?(CO_SETTINGS.default_rate_jpy||20):(CO_SETTINGS.default_rate_usd||0.14);
+  if(!confirm(`全ての見積りのレートを ${rate} (${cur}) に一括更新しますか？`))return;
+  for(const q of QUOTES){
+    q.rate=rate;q.currency=cur;
+    await sb.from('quotes').upsert(q);
+  }
+  await loadMeetings();toast('全見積りのレートを更新しました');
 }
 
 async function addCustomQuote(){
