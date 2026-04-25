@@ -104,6 +104,30 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 /* 無効セル */
 .qt-disabled{color:var(--g400);text-align:center;}
 
+/* 発注書 */
+.po-card{background:#fff;border:2px solid var(--g300);border-radius:8px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.po-header{padding:10px 14px;background:linear-gradient(to right,#dbeafe,#eff6ff);border-bottom:2px solid var(--pri);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.po-lbl{display:block;font-size:10px;font-weight:700;color:var(--pri-d);margin-bottom:2px;letter-spacing:.3px;}
+.po-date{padding:5px 8px;border:1px solid var(--g300);border-radius:4px;font-size:13px;font-weight:700;outline:none;background:#fff;color:var(--g800);}
+.po-date:focus{border-color:var(--pri);box-shadow:0 0 0 2px rgba(30,64,175,.2);}
+.po-note{padding:5px 8px;border:1px solid var(--g300);border-radius:4px;font-size:12px;outline:none;background:#fff;width:100%;min-width:200px;}
+
+.po-tbl{border-collapse:collapse;width:100%;font-size:13px;}
+.po-tbl thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:8px;border:1px solid #9ca3af;font-weight:700;color:var(--g700);font-size:12px;text-align:center;}
+.po-tbl tbody td{padding:4px 6px;border:1px solid var(--g200);position:relative;}
+.po-tbl tbody tr:hover td{background:#eff6ff;}
+
+.po-in{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:3px;font-size:12px;outline:none;background:transparent;font-weight:500;}
+.po-in:hover{border-color:var(--g400);background:#fff;}
+.po-in:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 2px rgba(30,64,175,.15);}
+.po-num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+.po-money{padding-left:22px;font-size:13px;font-weight:700;color:#065f46;}
+.po-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:12px;pointer-events:none;}
+
+/* 未登録品番警告 */
+.po-code-warn{background:#fee2e2 !important;color:#991b1b !important;font-weight:700 !important;border:2px solid #ef4444 !important;}
+.po-warn-icon{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:14px;cursor:help;}
+
 /* Meeting list */
 .mt-card{background:#fff;border-radius:var(--r);border:1px solid var(--g200);margin-bottom:10px;overflow:hidden;}
 .mt-header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--g50);border-bottom:1px solid var(--g200);cursor:pointer;}
@@ -213,7 +237,7 @@ const SB_URL='https://ootpmvitsggulcqvufsd.supabase.co';
 const SB_KEY='sb_publishable_3trYXswFYXxq5cQji3G81g_woQLl_Xk';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
-let CUSTOMERS=[],MEETINGS=[],DECISIONS=[],QUOTES=[],PRODUCTS=[],CO_SETTINGS={},YEARS=[];
+let CUSTOMERS=[],MEETINGS=[],DECISIONS=[],QUOTES=[],PRODUCTS=[],POS=[],POITEMS=[],CO_SETTINGS={},YEARS=[];
 let CUR_YEAR=2026,curCust=null,curView='meetings',currentUser=null,saveTimer=null;
 let editDecisions=[];
 
@@ -267,17 +291,24 @@ async function loadMeetings(){
   if(curCust)dq=dq.eq('customer_id',curCust);
   const{data:d}=await dq;
   DECISIONS=d||[];
-  // 見積り＆品番マスター取得（会社名で絞り込み）
+  // 見積り・品番・発注 取得
   if(coName){
-    const[{data:qt},{data:cs},{data:pr}]=await Promise.all([
+    const[{data:qt},{data:cs},{data:pr},{data:po}]=await Promise.all([
       sb.from('quotes').select('*').eq('year',CUR_YEAR).eq('company',coName).order('sort_order'),
       sb.from('company_settings').select('*').eq('company',coName).single(),
-      sb.from('products').select('id,company,code,is_parent,category,sort_order').eq('year',CUR_YEAR).eq('company',coName).order('sort_order')
+      sb.from('products').select('id,company,code,is_parent,category,sort_order').eq('year',CUR_YEAR).eq('company',coName).order('sort_order'),
+      sb.from('purchase_orders').select('*').eq('year',CUR_YEAR).eq('company',coName).order('receive_date',{ascending:false})
     ]);
     QUOTES=qt||[];
     CO_SETTINGS=cs||{default_currency:'JPY',default_rate_jpy:20,default_rate_usd:0.14};
     PRODUCTS=pr||[];
-  }else{QUOTES=[];PRODUCTS=[];CO_SETTINGS={};}
+    POS=po||[];
+    if(POS.length){
+      const poIds=POS.map(p=>p.id);
+      const{data:items}=await sb.from('purchase_order_items').select('*').in('po_id',poIds).order('sort_order');
+      POITEMS=items||[];
+    }else POITEMS=[];
+  }else{QUOTES=[];PRODUCTS=[];CO_SETTINGS={};POS=[];POITEMS=[];}
   render();
 }
 
@@ -306,16 +337,18 @@ function render(){
     `<div class="sub-tab${curView==='decisions'?' active':''}" onclick="curView='decisions';render();">決定事項一覧</div>`;
   if(isAdmin()){
     subTabsHtml+=`<div class="sub-tab${curView==='quotes'?' active':''}" onclick="curView='quotes';render();">💰 見積り管理</div>`;
+    subTabsHtml+=`<div class="sub-tab${curView==='pos'?' active':''}" onclick="curView='pos';render();">📋 発注書</div>`;
   }
   document.getElementById('subTabs').innerHTML=subTabsHtml;
 
-  // 非管理職が見積りタブを見ている場合、打合せに強制変更
-  if(curView==='quotes'&&!isAdmin())curView='meetings';
+  // 非管理職が管理職限定タブを見ている場合、打合せに強制変更
+  if((curView==='quotes'||curView==='pos')&&!isAdmin())curView='meetings';
 
   const ct=document.getElementById('content');
   if(curView==='meetings')ct.innerHTML=renderMeetings();
   else if(curView==='decisions')ct.innerHTML=renderDecisions();
   else if(curView==='quotes'&&isAdmin())ct.innerHTML=renderQuotes();
+  else if(curView==='pos'&&isAdmin())ct.innerHTML=renderPOs();
 }
 
 function renderMeetings(){
@@ -350,6 +383,141 @@ function renderMeetings(){
     h+=`</div></div>`;
   });
   return h;
+}
+
+// ── 発注書 ──
+function renderPOs(){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
+  const u=defaultCurrency==='JPY'?'¥':'$';
+
+  // 見積り（メイン行）から品番→卸値マップ作成
+  const priceMap={};
+  QUOTES.forEach(q=>{
+    if(q.quote_type==='sub')return;
+    const code=q.product_id?(PRODUCTS.find(p=>p.id===q.product_id)?.code||'').trim():(q.product_code||'');
+    if(code&&q.wholesale_price)priceMap[code]=q.wholesale_price;
+  });
+  // マスター品番一覧
+  const masterCodes=new Set(PRODUCTS.map(p=>(p.code||'').trim()));
+
+  let h=`<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <button class="btn btn-p" onclick="addBulkPO()">＋ 量産発注を作成（全品番一括）</button>
+    <button class="btn btn-o" onclick="addEmptyPO()">＋ 空の発注書を作成</button>
+  </div>`;
+
+  if(!POS.length)return h+'<div class="empty"><p>発注書がまだありません</p></div>';
+
+  POS.forEach(po=>{
+    const items=POITEMS.filter(i=>i.po_id===po.id);
+    h+=`<div class="po-card">
+      <div class="po-header">
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+          <div><label class="po-lbl">📅 発注受領日</label><input type="date" value="${po.receive_date||''}" onchange="updPO('${po.id}','receive_date',this.value)" class="po-date"></div>
+          <div><label class="po-lbl">📤 発注送付日</label><input type="date" value="${po.send_date||''}" onchange="updPO('${po.id}','send_date',this.value)" class="po-date"></div>
+          <div style="flex:1;"><label class="po-lbl">備考</label><input type="text" value="${esc(po.notes||'')}" onchange="updPO('${po.id}','notes',this.value)" class="po-note" placeholder="メモ"></div>
+        </div>
+        <button class="btn btn-d btn-sm" onclick="delPO('${po.id}')">発注書削除</button>
+      </div>
+      <div style="overflow:auto;"><table class="po-tbl">
+        <thead><tr>
+          <th style="min-width:120px;">品番</th>
+          <th style="min-width:90px;">指図</th>
+          <th style="min-width:80px;">数量</th>
+          <th style="min-width:120px;">希望納期</th>
+          <th style="min-width:100px;">卸値</th>
+          <th style="min-width:50px;"></th>
+        </tr></thead><tbody>`;
+    items.forEach(it=>{
+      const isMaster=masterCodes.has((it.product_code||'').trim());
+      const codeClass=it.product_code&&!isMaster?'po-code-warn':'';
+      const autoPrice=priceMap[(it.product_code||'').trim()]||0;
+      h+=`<tr>
+        <td><input type="text" value="${esc(it.product_code||'')}" onchange="updPOItem('${it.id}','product_code',this.value)" class="po-in ${codeClass}" placeholder="品番">${it.product_code&&!isMaster?'<span class="po-warn-icon" title="マスターに未登録です。開発・生産管理アプリで品番登録をお願いします">⚠️</span>':''}</td>
+        <td><input type="text" value="${esc(it.shiji_code||'')}" onchange="updPOItem('${it.id}','shiji_code',this.value)" class="po-in" placeholder="指図"></td>
+        <td><input type="number" value="${it.quantity||''}" onchange="updPOItem('${it.id}','quantity',this.value)" class="po-in po-num" placeholder="0"></td>
+        <td><input type="date" value="${it.desired_delivery||''}" onchange="updPOItem('${it.id}','desired_delivery',this.value)" class="po-in"></td>
+        <td><span class="po-prefix">${u}</span><input type="number" step="0.01" value="${it.wholesale_price||autoPrice||''}" onchange="updPOItem('${it.id}','wholesale_price',this.value)" class="po-in po-num po-money" placeholder="${autoPrice||0}"></td>
+        <td><button class="btn btn-d btn-sm" onclick="delPOItem('${it.id}')">×</button></td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>
+      <div style="padding:8px;background:#f9fafb;"><button class="btn btn-o btn-sm" onclick="addPOItem('${po.id}')">＋ 行追加</button></div>
+    </div>`;
+  });
+  return h;
+}
+
+async function addBulkPO(){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  if(!coName)return;
+  if(!PRODUCTS.length){toast('品番が登録されていません');return;}
+  if(!confirm(`${coName}の${CUR_YEAR}年度の全品番（${PRODUCTS.length}件）を発注書として作成しますか？`))return;
+  const today=new Date().toISOString().split('T')[0];
+  const poId='po_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4);
+  await sb.from('purchase_orders').insert({
+    id:poId,company:coName,year:CUR_YEAR,receive_date:today,send_date:null,notes:'量産発注',
+    created_at:new Date().toISOString()
+  });
+  // 全品番を明細に追加
+  const priceMap={};
+  QUOTES.forEach(q=>{
+    if(q.quote_type==='sub')return;
+    const code=q.product_id?(PRODUCTS.find(p=>p.id===q.product_id)?.code||'').trim():(q.product_code||'');
+    if(code&&q.wholesale_price)priceMap[code]=q.wholesale_price;
+  });
+  const items=PRODUCTS.map((p,i)=>({
+    id:'poi_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4)+i,
+    po_id:poId,product_code:p.code||'',shiji_code:'',quantity:0,
+    desired_delivery:null,wholesale_price:priceMap[(p.code||'').trim()]||0,
+    currency:CO_SETTINGS.default_currency||'JPY',sort_order:i
+  }));
+  await sb.from('purchase_order_items').insert(items);
+  await loadMeetings();toast('量産発注書を作成しました');
+}
+
+async function addEmptyPO(){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  if(!coName)return;
+  const today=new Date().toISOString().split('T')[0];
+  const poId='po_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4);
+  await sb.from('purchase_orders').insert({id:poId,company:coName,year:CUR_YEAR,receive_date:today,created_at:new Date().toISOString()});
+  await loadMeetings();toast('空の発注書を作成しました');
+}
+
+async function addPOItem(poId){
+  const items=POITEMS.filter(i=>i.po_id===poId);
+  const maxSort=items.length?Math.max(...items.map(i=>i.sort_order||0))+1:0;
+  await sb.from('purchase_order_items').insert({
+    id:'poi_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
+    po_id:poId,product_code:'',shiji_code:'',quantity:0,
+    wholesale_price:0,currency:CO_SETTINGS.default_currency||'JPY',sort_order:maxSort
+  });
+  await loadMeetings();
+}
+
+async function updPO(id,field,val){
+  await sb.from('purchase_orders').update({[field]:val,updated_by:currentUser.email,updated_at:new Date().toISOString()}).eq('id',id);
+  const po=POS.find(p=>p.id===id);if(po)po[field]=val;
+}
+
+async function updPOItem(id,field,val){
+  let v=val;
+  if(['quantity','wholesale_price'].includes(field))v=parseFloat(val)||0;
+  await sb.from('purchase_order_items').update({[field]:v}).eq('id',id);
+  const it=POITEMS.find(i=>i.id===id);if(it)it[field]=v;
+  if(field==='product_code')render();
+}
+
+async function delPO(id){
+  if(!confirm('この発注書を削除しますか？明細も全て削除されます'))return;
+  await sb.from('purchase_orders').delete().eq('id',id);
+  await loadMeetings();toast('削除しました');
+}
+
+async function delPOItem(id){
+  await sb.from('purchase_order_items').delete().eq('id',id);
+  await loadMeetings();
 }
 
 function renderQuotes(){
