@@ -1038,8 +1038,13 @@ function closeMo(id){document.getElementById(id).classList.remove('active');}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)closeMo(el.id);});});
 
-// 数値入力でスクロールホイール無効化（誤操作防止）
-// 矢印キーは標準動作（テキストカーソル移動）に戻す
+// 数値入力で上下矢印キー＆スクロールホイールを無効化（値の増減を防ぐ）
+// 左右矢印は標準動作（テキストカーソル移動）
+document.addEventListener('keydown',e=>{
+  if(e.target.type==='number'&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+  }
+},true);
 document.addEventListener('wheel',e=>{
   if(e.target.type==='number'&&document.activeElement===e.target){e.preventDefault();}
 },{passive:false});
