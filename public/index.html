@@ -104,6 +104,11 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 /* 無効セル */
 .qt-disabled{color:var(--g400);text-align:center;}
 
+/* 数値入力からスピナー削除 */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type="number"]{-moz-appearance:textfield;}
+
 /* 発注書 */
 .po-card{background:#fff;border:2px solid var(--g300);border-radius:8px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);}
 .po-header{padding:10px 14px;background:linear-gradient(to right,#dbeafe,#eff6ff);border-bottom:2px solid var(--pri);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -937,6 +942,14 @@ function openMo(id){document.getElementById(id).classList.add('active');}
 function closeMo(id){document.getElementById(id).classList.remove('active');}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)closeMo(el.id);});});
+
+// 数値入力で矢印キー＆スクロールホイールを無効化（誤操作防止）
+document.addEventListener('keydown',e=>{
+  if(e.target.type==='number'&&(e.key==='ArrowUp'||e.key==='ArrowDown')){e.preventDefault();}
+},true);
+document.addEventListener('wheel',e=>{
+  if(e.target.type==='number'&&document.activeElement===e.target){e.preventDefault();}
+},{passive:false});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mo.active').forEach(el=>closeMo(el.id));});
 document.getElementById('loginPass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
