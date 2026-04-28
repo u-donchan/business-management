@@ -396,12 +396,16 @@ function renderPOs(){
   const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
   const u=defaultCurrency==='JPY'?'¥':'$';
 
-  // 見積り（メイン行）から品番→卸値マップ作成
+  // 見積り（メイン行）から品番→副資材込み価格マップ作成
+  // wholesale_with_sub を優先、なければwholesale_priceにフォールバック
   const priceMap={};
   QUOTES.forEach(q=>{
     if(q.quote_type==='sub')return;
     const code=q.product_id?(PRODUCTS.find(p=>p.id===q.product_id)?.code||'').trim():(q.product_code||'');
-    if(code&&q.wholesale_price)priceMap[code]=q.wholesale_price;
+    if(code){
+      const price=q.wholesale_with_sub||q.wholesale_price||0;
+      if(price)priceMap[code]=price;
+    }
   });
   // マスター品番一覧
   const masterCodes=new Set(PRODUCTS.map(p=>(p.code||'').trim()));
@@ -432,7 +436,7 @@ function renderPOs(){
           <th style="min-width:120px;">備考</th>
           <th style="min-width:80px;">数量</th>
           <th style="min-width:120px;">希望納期</th>
-          <th style="min-width:100px;">卸値</th>
+          <th style="min-width:110px;">副資材込み価格</th>
           <th style="min-width:50px;"></th>
         </tr></thead><tbody>`;
     items.forEach(it=>{
@@ -466,12 +470,15 @@ async function addBulkPO(){
     id:poId,company:coName,year:CUR_YEAR,receive_date:today,send_date:null,notes:'量産発注',
     created_at:new Date().toISOString()
   });
-  // 全品番を明細に追加
+  // 全品番を明細に追加（副資材込み価格を優先）
   const priceMap={};
   QUOTES.forEach(q=>{
     if(q.quote_type==='sub')return;
     const code=q.product_id?(PRODUCTS.find(p=>p.id===q.product_id)?.code||'').trim():(q.product_code||'');
-    if(code&&q.wholesale_price)priceMap[code]=q.wholesale_price;
+    if(code){
+      const price=q.wholesale_with_sub||q.wholesale_price||0;
+      if(price)priceMap[code]=price;
+    }
   });
   const items=PRODUCTS.map((p,i)=>({
     id:'poi_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4)+i,
