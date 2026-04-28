@@ -788,9 +788,34 @@ async function addYear(){
   if(isNaN(yr)||yr<2000||yr>2100){toast('正しい年度を入力してください');return;}
   if(YEARS.includes(yr)){toast(`${yr}年度は既に存在します`);return;}
   await sb.from('years').insert({year:yr});
+
+  // 前年度の見積りを引き継ぐ（議事録・発注書は引き継がない）
+  const prevYr=YEARS.length?YEARS[YEARS.length-1]:null;
+  let copiedQuotes=0;
+  if(prevYr){
+    const{data:prevQuotes}=await sb.from('quotes').select('*').eq('year',prevYr);
+    if(prevQuotes&&prevQuotes.length){
+      const newQuotes=prevQuotes.map((q,i)=>({
+        ...q,
+        id:`q_${yr}_${Date.now().toString(36)}${i}`,
+        year:yr,
+        created_at:new Date().toISOString(),
+        updated_at:new Date().toISOString(),
+        updated_by:currentUser.email
+      }));
+      // チャンク単位で投入（一度に多すぎる場合の対策）
+      const chunkSize=50;
+      for(let j=0;j<newQuotes.length;j+=chunkSize){
+        await sb.from('quotes').insert(newQuotes.slice(j,j+chunkSize));
+      }
+      copiedQuotes=newQuotes.length;
+    }
+  }
+
   YEARS.push(yr);YEARS.sort();
   CUR_YEAR=yr;
-  await loadMeetings();toast(`${yr}年度を追加しました`);
+  await loadMeetings();
+  toast(`${yr}年度を追加しました${copiedQuotes?`（見積り${copiedQuotes}件を引き継ぎ）`:''}`);
 }
 
 async function deleteYear(yr){
