@@ -400,6 +400,8 @@ function renderPOs(){
   });
   // マスター品番一覧
   const masterCodes=new Set(PRODUCTS.map(p=>(p.code||'').trim()));
+  // 会社別の備考プレースホルダー
+  const remarkPh=coName==='クロダルマ'?'指図':(coName==='シンメン'?'カラー':(coName==='NSP'?'注文No.':''));
 
   let h=`<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <button class="btn btn-p" onclick="addBulkPO()">＋ 量産発注を作成（全品番一括）</button>
@@ -422,7 +424,7 @@ function renderPOs(){
       <div style="overflow:auto;"><table class="po-tbl">
         <thead><tr>
           <th style="min-width:120px;">品番</th>
-          <th style="min-width:90px;">指図</th>
+          <th style="min-width:120px;">備考</th>
           <th style="min-width:80px;">数量</th>
           <th style="min-width:120px;">希望納期</th>
           <th style="min-width:100px;">卸値</th>
@@ -434,7 +436,7 @@ function renderPOs(){
       const autoPrice=priceMap[(it.product_code||'').trim()]||0;
       h+=`<tr>
         <td><input type="text" value="${esc(it.product_code||'')}" onchange="updPOItem('${it.id}','product_code',this.value)" class="po-in ${codeClass}" placeholder="品番">${it.product_code&&!isMaster?'<span class="po-warn-icon" title="マスターに未登録です。開発・生産管理アプリで品番登録をお願いします">⚠️</span>':''}</td>
-        <td><input type="text" value="${esc(it.shiji_code||'')}" onchange="updPOItem('${it.id}','shiji_code',this.value)" class="po-in" placeholder="指図"></td>
+        <td><input type="text" value="${esc(it.shiji_code||'')}" onchange="updPOItem('${it.id}','shiji_code',this.value)" class="po-in" placeholder="${remarkPh}"></td>
         <td><input type="number" value="${it.quantity||''}" onchange="updPOItem('${it.id}','quantity',this.value)" class="po-in po-num" placeholder="0"></td>
         <td><input type="date" value="${it.desired_delivery||''}" onchange="updPOItem('${it.id}','desired_delivery',this.value)" class="po-in"></td>
         <td><span class="po-prefix">${u}</span><input type="number" step="0.01" value="${it.wholesale_price||autoPrice||''}" onchange="updPOItem('${it.id}','wholesale_price',this.value)" class="po-in po-num po-money" placeholder="${autoPrice||0}"></td>
