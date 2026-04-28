@@ -438,7 +438,7 @@ function renderPOs(){
         <td><input type="number" value="${it.quantity||''}" onchange="updPOItem('${it.id}','quantity',this.value)" class="po-in po-num" placeholder="0"></td>
         <td><input type="date" value="${it.desired_delivery||''}" onchange="updPOItem('${it.id}','desired_delivery',this.value)" class="po-in"></td>
         <td><span class="po-prefix">${u}</span><input type="number" step="0.01" value="${it.wholesale_price||autoPrice||''}" onchange="updPOItem('${it.id}','wholesale_price',this.value)" class="po-in po-num po-money" placeholder="${autoPrice||0}"></td>
-        <td><button class="btn btn-d btn-sm" onclick="delPOItem('${it.id}')">×</button></td>
+        <td style="white-space:nowrap;"><button class="btn btn-o btn-sm" onclick="addPOItemBefore('${po.id}','${it.id}')" title="この行の上に追加">＋↑</button> <button class="btn btn-d btn-sm" onclick="delPOItem('${it.id}')">×</button></td>
       </tr>`;
     });
     h+=`</tbody></table></div>
@@ -494,6 +494,26 @@ async function addPOItem(poId){
     wholesale_price:0,currency:CO_SETTINGS.default_currency||'JPY',sort_order:maxSort
   });
   await loadMeetings();
+}
+
+async function addPOItemBefore(poId,beforeItemId){
+  const items=POITEMS.filter(i=>i.po_id===poId).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const target=items.find(i=>i.id===beforeItemId);
+  if(!target)return;
+  const targetSort=target.sort_order||0;
+  // targetSort以降の全行のsort_orderを+1（後ろにずらす）
+  for(const it of items){
+    if((it.sort_order||0)>=targetSort){
+      await sb.from('purchase_order_items').update({sort_order:(it.sort_order||0)+1}).eq('id',it.id);
+    }
+  }
+  // 新規行を挿入
+  await sb.from('purchase_order_items').insert({
+    id:'poi_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
+    po_id:poId,product_code:'',shiji_code:'',quantity:0,
+    wholesale_price:0,currency:CO_SETTINGS.default_currency||'JPY',sort_order:targetSort
+  });
+  await loadMeetings();toast('行を上に追加しました');
 }
 
 async function updPO(id,field,val){
