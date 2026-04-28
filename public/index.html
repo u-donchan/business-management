@@ -98,6 +98,9 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 /* 計算値（自動・太字だが背景は行に合わせる） */
 .qt-calc{text-align:right;color:var(--g500);font-weight:700;font-variant-numeric:tabular-nums;padding:4px 6px !important;font-size:12px;font-style:italic;}
 
+/* 固定表示セル（編集不可） */
+.qt-fixed{text-align:center;color:var(--g600);font-weight:700;font-size:12px;background:#f9fafb;}
+
 /* 卸値・副資材込（メイン金額として強調） */
 .qt-main-money .qt-in{font-size:13px !important;font-weight:800 !important;color:#1e3a8a !important;}
 
@@ -667,7 +670,7 @@ function renderQuotes(){
       if(isSub){h+=`<td class="qt-disabled">-</td>`;}
       else{h+=`<td class="qt-money-cell qt-main-money"><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;}
       // 通貨
-      h+=`<td><select onchange="updQ2('${qid}','${r.product?.id||''}','currency',this.value,${r.isCustom},'${qtype}')" class="qt-sel"><option${curr==='JPY'?' selected':''}>JPY</option><option${curr==='USD'?' selected':''}>USD</option></select></td>`;
+      h+=`<td class="qt-fixed">${curr}</td>`;
       // 削除
       h+=`<td>${r.isCustom&&!isSub?`<button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button>`:''}</td>`;
 
