@@ -714,8 +714,13 @@ async function updQ2(qid,productId,field,val,isCustom,qtype){
   const{error}=await sb.from('quotes').upsert(q);
   document.getElementById('savingInd')?.classList.remove('show');
   if(error){
-    console.error('見積り保存エラー:',error,q);
-    toast('保存失敗: '+error.message);
+    console.error('===見積り保存エラー===');
+    console.error('error.message:',error.message);
+    console.error('error.details:',error.details);
+    console.error('error.hint:',error.hint);
+    console.error('error.code:',error.code);
+    console.error('送信データ:',JSON.stringify(q,null,2));
+    toast('保存失敗: '+(error.message||'詳細はF12のConsoleで確認'));
     return;
   }
   render();
