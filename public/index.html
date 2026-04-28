@@ -56,12 +56,12 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 /* Quote table - 視認性改善 */
 .qt-wrap{overflow:auto;background:#fff;border-radius:8px;border:2px solid var(--g300);box-shadow:0 2px 6px rgba(0,0,0,.08);}
 .qt{border-collapse:collapse;width:100%;font-size:13px;}
-.qt thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:10px 8px;border:1px solid #9ca3af;font-weight:800;color:#1f2937;font-size:12px;letter-spacing:.3px;text-align:center;position:sticky;top:0;z-index:3;}
+.qt thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:6px;border:1px solid #9ca3af;font-weight:800;color:#1f2937;font-size:11px;letter-spacing:.3px;text-align:center;position:sticky;top:0;z-index:3;}
 .qt thead th .unit{font-size:10px;font-weight:600;color:var(--g500);}
-.qt tbody td{padding:6px 8px;border:1px solid #d1d5db;vertical-align:middle;font-size:13px;}
+.qt tbody td{padding:1px 4px;border:1px solid #d1d5db;vertical-align:middle;font-size:12px;line-height:1;}
 
 /* 品番セル（控えめに）*/
-.qt-code-cell{background:#f9fafb;border-left:2px solid var(--g400);font-weight:600;min-width:110px;padding:8px !important;vertical-align:middle !important;color:var(--g700);}
+.qt-code-cell{background:#f9fafb;border-left:2px solid var(--g400);font-weight:600;min-width:100px;padding:4px 6px !important;vertical-align:middle !important;color:var(--g700);}
 .qt-code{font-size:12px;font-weight:700;color:var(--g700);}
 .qt-code-in{width:100%;padding:4px;border:1px solid transparent;font-size:12px;font-weight:600;outline:none;background:transparent;color:var(--g700);}
 .qt-code-in:focus{border-color:var(--pri);background:#fff;}
@@ -79,27 +79,27 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 .qt-cat-sub{color:#92400e;font-weight:700;}
 
 /* 入力フィールド（金額を強調） */
-.qt-in{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:4px;font-size:13px;outline:none;background:transparent;font-weight:600;color:#111827;}
+.qt-in{width:100%;padding:3px 6px;border:1px solid transparent;border-radius:4px;font-size:12px;outline:none;background:transparent;font-weight:600;color:#111827;line-height:1.3;}
 .qt-in:hover{border-color:var(--g400);background:rgba(255,255,255,.8);}
 .qt-in:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 2px rgba(30,64,175,.2);}
 .qt-num{text-align:right;font-variant-numeric:tabular-nums;}
 /* 金額入力のセル（全体を強調） */
-.qt-money-cell{position:relative;padding:2px 6px !important;}
-.qt-money-cell .qt-in{font-size:14px;font-weight:700;color:#065f46;padding-left:22px;}
+.qt-money-cell{position:relative;padding:1px 4px !important;}
+.qt-money-cell .qt-in{font-size:13px;font-weight:700;color:#065f46;padding-left:18px;}
 .qt-money-cell .qt-prefix{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:12px;pointer-events:none;}
 /* % 付き入力 */
-.qt-pct-cell{position:relative;padding:2px 6px !important;}
-.qt-pct-cell .qt-in{padding-right:22px;}
-.qt-pct-cell .qt-suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:12px;pointer-events:none;}
+.qt-pct-cell{position:relative;padding:1px 4px !important;}
+.qt-pct-cell .qt-in{padding-right:18px;}
+.qt-pct-cell .qt-suffix{position:absolute;right:6px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:11px;pointer-events:none;}
 
-.qt-sel{width:100%;padding:5px 4px;border:1px solid transparent;border-radius:4px;font-size:12px;font-weight:700;outline:none;background:transparent;color:var(--pri-d);cursor:pointer;text-align:center;}
+.qt-sel{width:100%;padding:3px 4px;border:1px solid transparent;border-radius:4px;font-size:11px;font-weight:700;outline:none;background:transparent;color:var(--pri-d);cursor:pointer;text-align:center;}
 .qt-sel:hover{border-color:var(--g400);background:#fff;}
 
 /* 計算値（自動・太字だが背景は行に合わせる） */
-.qt-calc{text-align:right;color:var(--g500);font-weight:700;font-variant-numeric:tabular-nums;padding:8px !important;font-size:13px;font-style:italic;}
+.qt-calc{text-align:right;color:var(--g500);font-weight:700;font-variant-numeric:tabular-nums;padding:4px 6px !important;font-size:12px;font-style:italic;}
 
 /* 卸値・副資材込（メイン金額として強調） */
-.qt-main-money .qt-in{font-size:15px !important;font-weight:800 !important;color:#1e3a8a !important;}
+.qt-main-money .qt-in{font-size:13px !important;font-weight:800 !important;color:#1e3a8a !important;}
 
 /* 無効セル */
 .qt-disabled{color:var(--g400);text-align:center;}
@@ -112,17 +112,17 @@ body{font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif;background:var(-
 .po-date:focus{border-color:var(--pri);box-shadow:0 0 0 2px rgba(30,64,175,.2);}
 .po-note{padding:5px 8px;border:1px solid var(--g300);border-radius:4px;font-size:12px;outline:none;background:#fff;width:100%;min-width:200px;}
 
-.po-tbl{border-collapse:collapse;width:100%;font-size:13px;}
-.po-tbl thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:8px;border:1px solid #9ca3af;font-weight:700;color:var(--g700);font-size:12px;text-align:center;}
-.po-tbl tbody td{padding:4px 6px;border:1px solid var(--g200);position:relative;}
+.po-tbl{border-collapse:collapse;width:100%;font-size:12px;}
+.po-tbl thead th{background:linear-gradient(to bottom,#e5e7eb,#d1d5db);padding:5px 6px;border:1px solid #9ca3af;font-weight:700;color:var(--g700);font-size:11px;text-align:center;}
+.po-tbl tbody td{padding:1px 4px;border:1px solid var(--g200);position:relative;line-height:1;}
 .po-tbl tbody tr:hover td{background:#eff6ff;}
 
-.po-in{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:3px;font-size:12px;outline:none;background:transparent;font-weight:500;}
+.po-in{width:100%;padding:3px 6px;border:1px solid transparent;border-radius:3px;font-size:12px;outline:none;background:transparent;font-weight:500;line-height:1.3;}
 .po-in:hover{border-color:var(--g400);background:#fff;}
 .po-in:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 2px rgba(30,64,175,.15);}
 .po-num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
-.po-money{padding-left:22px;font-size:13px;font-weight:700;color:#065f46;}
-.po-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:12px;pointer-events:none;}
+.po-money{padding-left:18px;font-size:12px;font-weight:700;color:#065f46;}
+.po-prefix{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g600);font-weight:700;font-size:11px;pointer-events:none;}
 
 /* 未登録品番警告 */
 .po-code-warn{background:#fee2e2 !important;color:#991b1b !important;font-weight:700 !important;border:2px solid #ef4444 !important;}
