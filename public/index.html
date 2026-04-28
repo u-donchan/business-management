@@ -330,6 +330,27 @@ function debounceSaveQuote(q){if(saveTimer)clearTimeout(saveTimer);saveTimer=set
 
 // ── Render ──
 function render(){
+  // フォーカス位置とスクロール位置を保存
+  const focused=document.activeElement;
+  let focusInfo=null;
+  if(focused&&(focused.tagName==='INPUT'||focused.tagName==='SELECT')){
+    const tr=focused.closest('tr');
+    const td=focused.closest('td');
+    if(tr&&td&&tr.parentElement){
+      const tbody=tr.parentElement;
+      focusInfo={
+        rowIdx:Array.from(tbody.children).indexOf(tr),
+        colIdx:Array.from(tr.children).indexOf(td),
+        selStart:focused.selectionStart,
+        selEnd:focused.selectionEnd,
+        tableSelector:focused.closest('.qt-wrap')?'.qt-wrap':(focused.closest('.po-tbl')?'.po-tbl':null)
+      };
+    }
+  }
+  const ssWrap=document.querySelector('.ss-wrap, .qt-wrap');
+  const scrollX=ssWrap?ssWrap.scrollLeft:0;
+  const scrollY=ssWrap?ssWrap.scrollTop:0;
+
   // Year
   document.getElementById('yearSel').innerHTML=YEARS.map(y=>{
     const canDel=YEARS.length>1;
@@ -357,6 +378,27 @@ function render(){
   else if(curView==='decisions')ct.innerHTML=renderDecisions();
   else if(curView==='quotes'&&isAdmin())ct.innerHTML=renderQuotes();
   else if(curView==='pos'&&isAdmin())ct.innerHTML=renderPOs();
+
+  // フォーカスとスクロール位置を復元
+  const restore=()=>{
+    const newWrap=document.querySelector('.ss-wrap, .qt-wrap');
+    if(newWrap){newWrap.scrollLeft=scrollX;newWrap.scrollTop=scrollY;}
+    if(focusInfo){
+      const table=focusInfo.tableSelector?document.querySelector(focusInfo.tableSelector):document;
+      const tbody=table?.querySelector('tbody');
+      const newRow=tbody?.children[focusInfo.rowIdx];
+      const newCell=newRow?.children[focusInfo.colIdx];
+      const newInput=newCell?.querySelector('input,select');
+      if(newInput){
+        newInput.focus();
+        if(focusInfo.selStart!=null&&newInput.setSelectionRange){
+          try{newInput.setSelectionRange(focusInfo.selStart,focusInfo.selEnd);}catch{}
+        }
+      }
+    }
+  };
+  restore();
+  requestAnimationFrame(restore);
 }
 
 function renderMeetings(){
@@ -996,58 +1038,11 @@ function closeMo(id){document.getElementById(id).classList.remove('active');}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)closeMo(el.id);});});
 
-// 数値入力で矢印キー＆スクロールホイールを無効化（誤操作防止）
-// 見積り管理（.qt-in）では上下矢印でセル移動
-document.addEventListener('keydown',e=>{
-  const t=e.target;
-  if(t.type!=='number'&&!t.classList?.contains('qt-in'))return;
-  // 上下矢印で値変更を防ぐ
-  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
-    // 見積り入力欄なら上下セル移動
-    if(t.classList.contains('qt-in')){
-      e.preventDefault();
-      moveQtCell(t,e.key);
-      return;
-    }
-    // 通常の数値入力では値変更を防ぐ
-    e.preventDefault();
-  }
-  // Enterで下のセルに移動
-  if(e.key==='Enter'&&t.classList?.contains('qt-in')){
-    e.preventDefault();t.blur();
-    setTimeout(()=>moveQtCell(t,'ArrowDown'),50);
-  }
-},true);
+// 数値入力でスクロールホイール無効化（誤操作防止）
+// 矢印キーは標準動作（テキストカーソル移動）に戻す
 document.addEventListener('wheel',e=>{
   if(e.target.type==='number'&&document.activeElement===e.target){e.preventDefault();}
 },{passive:false});
-
-// 見積り管理の上下セル移動
-function moveQtCell(input,direction){
-  const td=input.closest('td');if(!td)return;
-  const tr=td.closest('tr');if(!tr)return;
-  const tdIdx=Array.from(tr.children).indexOf(td);
-  let targetTd=null;
-  if(direction==='ArrowUp'){
-    let prevRow=tr.previousElementSibling;
-    while(prevRow){
-      const cell=prevRow.children[tdIdx];
-      if(cell&&cell.querySelector('input.qt-in')){targetTd=cell;break;}
-      prevRow=prevRow.previousElementSibling;
-    }
-  }else if(direction==='ArrowDown'){
-    let nextRow=tr.nextElementSibling;
-    while(nextRow){
-      const cell=nextRow.children[tdIdx];
-      if(cell&&cell.querySelector('input.qt-in')){targetTd=cell;break;}
-      nextRow=nextRow.nextElementSibling;
-    }
-  }
-  if(targetTd){
-    const targetInput=targetTd.querySelector('input.qt-in');
-    if(targetInput){targetInput.focus();targetInput.select?.();}
-  }
-}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mo.active').forEach(el=>closeMo(el.id));});
 document.getElementById('loginPass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
