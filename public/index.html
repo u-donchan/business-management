@@ -969,12 +969,70 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)closeMo(el.id);});});
 
 // 数値入力で矢印キー＆スクロールホイールを無効化（誤操作防止）
+// 見積り管理（.qt-in）では矢印キーでセル移動
 document.addEventListener('keydown',e=>{
-  if(e.target.type==='number'&&(e.key==='ArrowUp'||e.key==='ArrowDown')){e.preventDefault();}
+  const t=e.target;
+  if(t.type!=='number'&&!t.classList?.contains('qt-in'))return;
+  // 上下矢印で値変更を防ぐ
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    // 見積り入力欄ならセル移動
+    if(t.classList.contains('qt-in')){
+      e.preventDefault();
+      moveQtCell(t,e.key);
+      return;
+    }
+    // それ以外の数値入力では値変更を防ぐ
+    if(e.key==='ArrowUp'||e.key==='ArrowDown')e.preventDefault();
+  }
+  // Enterで下のセルに移動
+  if(e.key==='Enter'&&t.classList?.contains('qt-in')){
+    e.preventDefault();t.blur();
+    setTimeout(()=>moveQtCell(t,'ArrowDown'),50);
+  }
 },true);
 document.addEventListener('wheel',e=>{
   if(e.target.type==='number'&&document.activeElement===e.target){e.preventDefault();}
 },{passive:false});
+
+// 見積り管理のセル移動
+function moveQtCell(input,direction){
+  const td=input.closest('td');if(!td)return;
+  const tr=td.closest('tr');if(!tr)return;
+  const tbody=tr.parentElement;
+  const tdIdx=Array.from(tr.children).indexOf(td);
+  let targetTd=null;
+  if(direction==='ArrowLeft'){
+    // 同じ行の前のセル
+    let prev=td.previousElementSibling;
+    while(prev&&!prev.querySelector('input,select')){prev=prev.previousElementSibling;}
+    targetTd=prev;
+  }else if(direction==='ArrowRight'){
+    let next=td.nextElementSibling;
+    while(next&&!next.querySelector('input,select')){next=next.nextElementSibling;}
+    targetTd=next;
+  }else if(direction==='ArrowUp'){
+    let prevRow=tr.previousElementSibling;
+    while(prevRow){
+      const cell=prevRow.children[tdIdx];
+      if(cell&&cell.querySelector('input,select')){targetTd=cell;break;}
+      prevRow=prevRow.previousElementSibling;
+    }
+  }else if(direction==='ArrowDown'){
+    let nextRow=tr.nextElementSibling;
+    while(nextRow){
+      const cell=nextRow.children[tdIdx];
+      if(cell&&cell.querySelector('input,select')){targetTd=cell;break;}
+      nextRow=nextRow.nextElementSibling;
+    }
+  }
+  if(targetTd){
+    const targetInput=targetTd.querySelector('input,select');
+    if(targetInput){
+      targetInput.focus();
+      if(targetInput.select)targetInput.select();
+    }
+  }
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mo.active').forEach(el=>closeMo(el.id));});
 document.getElementById('loginPass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
