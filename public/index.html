@@ -890,15 +890,13 @@ async function addYear(){
 
 async function deleteYear(yr){
   if(YEARS.length<=1){toast('最後の年度は削除できません');return;}
-  if(!confirm(`${yr}年度のデータを完全に削除しますか？\n議事録・決定事項・見積りも全て削除されます。`))return;
-  // 関連データを削除
+  if(!confirm(`${yr}年度の顧客管理データを削除しますか？\n議事録・決定事項・見積り・発注書のみ削除します。\n（開発・生産管理アプリの${yr}年度データは残ります）`))return;
+  // 顧客管理スコープのみ削除（yearsテーブルは触らない＝開発管理側に影響しない）
   await sb.from('decisions').delete().eq('year',yr);
   await sb.from('meetings').delete().eq('year',yr);
   await sb.from('quotes').delete().eq('year',yr);
-  await sb.from('years').delete().eq('year',yr);
-  YEARS=YEARS.filter(y=>y!==yr);
-  if(CUR_YEAR===yr)CUR_YEAR=YEARS[YEARS.length-1];
-  await loadMeetings();toast(`${yr}年度を削除しました`);
+  await sb.from('purchase_orders').delete().eq('year',yr);
+  await loadMeetings();toast(`${yr}年度の顧客管理データを削除しました`);
 }
 async function switchCust(id){curCust=id;await loadMeetings();}
 
