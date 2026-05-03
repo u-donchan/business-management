@@ -620,19 +620,28 @@ function renderQuotes(){
   // 品番マスター × 2行（カテゴリ + 副資材）+ 独自品番
   const linkedQuotes=QUOTES.filter(q=>q.product_id);
   const customQuotes=QUOTES.filter(q=>!q.product_id);
+  // 「上に挿入」マーカー解析: description が "__before:<pid>" だと、その商品の上に挿入
+  const beforeMap={};
+  const trailing=[];
+  customQuotes.forEach(q=>{
+    const m=(q.description||'').match(/^__before:([^\s]+)/);
+    if(m){(beforeMap[m[1]]=beforeMap[m[1]]||[]).push(q);}
+    else trailing.push(q);
+  });
 
   const rows=[];
+  const pushCustom=q=>{
+    const desc=(q.description||'').replace(/^__before:[^\s]+\s*/,'');
+    rows.push({product:null,quote:q,isCustom:true,type:q.quote_type||'main',category:q.quote_type==='sub'?'副資材':desc});
+  };
   PRODUCTS.forEach(p=>{
-    // メイン行（カテゴリ）
+    if(beforeMap[p.id])beforeMap[p.id].forEach(pushCustom);
     const mainQ=linkedQuotes.find(qt=>qt.product_id===p.id&&(qt.quote_type==='main'||!qt.quote_type));
     rows.push({product:p,quote:mainQ||null,isCustom:false,type:'main',category:p.category||''});
-    // 副資材行
     const subQ=linkedQuotes.find(qt=>qt.product_id===p.id&&qt.quote_type==='sub');
     rows.push({product:p,quote:subQ||null,isCustom:false,type:'sub',category:'副資材'});
   });
-  customQuotes.forEach(q=>{
-    rows.push({product:null,quote:q,isCustom:true,type:q.quote_type||'main',category:q.quote_type==='sub'?'副資材':(q.description||'')});
-  });
+  trailing.forEach(pushCustom);
 
   if(!rows.length)return h+'<div class="empty"><p>この会社の品番がまだ登録されていません<br>開発・生産管理アプリで品番を登録してください</p></div>';
 
@@ -689,9 +698,12 @@ function renderQuotes(){
 
       // 品番セル: グループの先頭行のみ表示（rowspan=行数）
       if(rIdx===0){
-        const codeContent=r.isCustom?`<input type="text" value="${esc(code)}" onchange="updQ2('${qid}','${r.product?.id||''}','product_code',this.value,${r.isCustom},'${qtype}')" class="qt-code-in">`:`<span class="qt-code">${esc(code)}</span>`;
+        const codeContent=r.isCustom
+          ?`<input type="text" value="${esc(code)}" onchange="updQ2('${qid}','${r.product?.id||''}','product_code',this.value,${r.isCustom},'${qtype}')" class="qt-code-in">`
+          :`<input type="text" value="${esc(code)}" onchange="updProductCode('${r.product.id}',this.value)" class="qt-code-in" title="編集すると品番マスターも更新されます">`;
         const customBadge=r.isCustom?'<div class="qt-custom-badge">独自追加</div>':'';
-        h+=`<td class="qt-code-cell" rowspan="${grp.rows.length}">${codeContent}${customBadge}</td>`;
+        const insBtn=r.product?`<button class="btn btn-sm" style="margin-top:4px;width:100%;font-size:10px;padding:2px;background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc;" onclick="addCustomQuoteBefore('${r.product.id}')" title="この上に独自品番を追加">＋↑</button>`:'';
+        h+=`<td class="qt-code-cell" rowspan="${grp.rows.length}">${codeContent}${customBadge}${insBtn}</td>`;
       }
 
       // カテゴリ
@@ -823,6 +835,39 @@ async function delQuote(id){
   if(!confirm('この見積りを削除しますか？'))return;
   await sb.from('quotes').delete().eq('id',id);
   await loadMeetings();toast('削除しました');
+}
+
+// 品番マスターのcodeを更新（見積り画面から）
+async function updProductCode(productId,newCode){
+  if(!productId||!newCode)return;
+  const {error}=await sb.from('products').update({code:newCode.trim()}).eq('id',productId);
+  if(error){toast('品番更新失敗: '+error.message);return;}
+  // ローカル反映
+  const p=PRODUCTS.find(x=>x.id===productId);if(p)p.code=newCode.trim();
+  toast('品番マスターを更新');
+}
+
+// 指定行の上に独自品番を挿入
+async function addCustomQuoteBefore(productId){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  if(!coName){toast('会社を選択してください');return;}
+  const code=prompt('上に追加する品番を入力:','');
+  if(!code)return;
+  const defaultCurrency=CO_SETTINGS.default_currency||'JPY';
+  const defaultRate=defaultCurrency==='JPY'?(CO_SETTINGS.default_rate_jpy||20):(CO_SETTINGS.default_rate_usd||0.14);
+  const q={
+    id:'q_'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
+    company:coName,year:CUR_YEAR,
+    product_id:null,product_code:code,
+    description:`__before:${productId}`,
+    factory_quote_cny:0,rate:defaultRate,margin_rate:0,
+    wholesale_price:0,wholesale_with_sub:0,
+    currency:defaultCurrency,sort_order:QUOTES.length,
+    created_at:new Date().toISOString()
+  };
+  const {error}=await sb.from('quotes').insert(q);
+  if(error){toast('追加失敗: '+error.message);return;}
+  await loadMeetings();toast('上に追加しました');
 }
 
 function renderDecisions(){
