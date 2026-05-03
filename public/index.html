@@ -322,6 +322,55 @@ async function loadMeetings(){
     }else POITEMS=[];
   }else{QUOTES=[];PRODUCTS=[];CO_SETTINGS={};POS=[];POITEMS=[];}
   render();
+  subscribeRealtime();
+}
+
+// Realtime: 他ユーザーの更新をリロードなしで反映
+let _rtChannel=null;
+function subscribeRealtime(){
+  if(_rtChannel){sb.removeChannel(_rtChannel);_rtChannel=null;}
+  const reload=async()=>{
+    const f=document.activeElement;
+    const inEdit=f&&(f.tagName==='INPUT'||f.tagName==='SELECT'||f.tagName==='TEXTAREA');
+    if(inEdit)return; // 編集中は再描画スキップ（次のイベントで適用される）
+    await loadMeetingsSilent();
+  };
+  _rtChannel=sb.channel(`biz-${CUR_YEAR}-${curCust||'none'}`)
+    .on('postgres_changes',{event:'*',schema:'public',table:'meetings'},reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'decisions'},reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'quotes'},reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'purchase_orders'},reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'purchase_order_items'},reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'products'},reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'years'},async(payload)=>{
+      if(payload.eventType==='INSERT'&&!YEARS.includes(payload.new.year)){YEARS.push(payload.new.year);YEARS.sort();render();}
+      else if(payload.eventType==='DELETE'){YEARS=YEARS.filter(y=>y!==payload.old.year);render();}
+    })
+    .subscribe();
+}
+// loadMeetings の中身を再利用（無限ループ防止のためsubscribeRealtimeは呼ばない）
+async function loadMeetingsSilent(){
+  const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
+  let q=sb.from('meetings').select('*').eq('year',CUR_YEAR).order('meeting_date',{ascending:false});
+  if(curCust)q=q.eq('customer_id',curCust);
+  const{data:m}=await q;MEETINGS=m||[];
+  let dq=sb.from('decisions').select('*').eq('year',CUR_YEAR).order('decided_at',{ascending:false});
+  if(curCust)dq=dq.eq('customer_id',curCust);
+  const{data:d}=await dq;DECISIONS=d||[];
+  if(coName){
+    const[{data:qt},{data:cs},{data:pr},{data:po}]=await Promise.all([
+      sb.from('quotes').select('*').eq('year',CUR_YEAR).eq('company',coName).order('sort_order'),
+      sb.from('company_settings').select('*').eq('company',coName).single(),
+      sb.from('products').select('id,company,code,is_parent,category,sort_order').eq('year',CUR_YEAR).eq('company',coName).order('sort_order'),
+      sb.from('purchase_orders').select('*').eq('year',CUR_YEAR).eq('company',coName).order('receive_date',{ascending:false})
+    ]);
+    QUOTES=qt||[];CO_SETTINGS=cs||{default_currency:'JPY',default_rate_jpy:20,default_rate_usd:0.14};PRODUCTS=pr||[];POS=po||[];
+    if(POS.length){
+      const{data:items}=await sb.from('purchase_order_items').select('*').in('po_id',POS.map(p=>p.id)).order('sort_order');
+      POITEMS=items||[];
+    }else POITEMS=[];
+  }else{QUOTES=[];PRODUCTS=[];CO_SETTINGS={};POS=[];POITEMS=[];}
+  render();
 }
 
 async function saveQuote(q){
