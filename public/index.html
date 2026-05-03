@@ -269,6 +269,10 @@ async function doSignup(){
 async function doLogout(){await sb.auth.signOut();location.reload();}
 function showLoginErr(m){const e=document.getElementById('loginErr');e.textContent=m;e.style.display='block';}
 function isAdmin(){return currentUser?.user_metadata?.role==='admin'||currentUser?.app_metadata?.role==='admin';}
+// 見積管理の編集権限（現状はadminと同じ。将来別ロールを切り出す場合はここを変える）
+function canEditQuotes(){return isAdmin();}
+// 編集可否ガード（mutationに先頭で呼ぶ）
+function guardEdit(){if(!isAdmin()){toast('閲覧のみ可能です。編集権限がありません。');return false;}return true;}
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
@@ -351,12 +355,12 @@ function render(){
   const scrollX=ssWrap?ssWrap.scrollLeft:0;
   const scrollY=ssWrap?ssWrap.scrollTop:0;
 
-  // Year
+  // Year（年度削除・追加は admin のみ）
   document.getElementById('yearSel').innerHTML=YEARS.map(y=>{
-    const canDel=YEARS.length>1;
+    const canDel=YEARS.length>1&&isAdmin();
     return`<button class="yr-btn${CUR_YEAR===y?' active':''}" onclick="switchYear(${y})" style="position:relative;">${y}年度${canDel?`<span class="yr-del" onclick="event.stopPropagation();deleteYear(${y})">×</span>`:''}</button>`;
   }).join('')+
-    `<button class="yr-btn" style="background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.4);" onclick="addYear()">＋</button>`;
+    (isAdmin()?`<button class="yr-btn" style="background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.4);" onclick="addYear()">＋</button>`:'');
   // Customer tabs
   document.getElementById('custTabs').innerHTML=
     CUSTOMERS.map(c=>`<div class="cust-tab${curCust===c.id?' active':''}" onclick="switchCust('${c.id}')">${esc(c.name)}</div>`).join('');
@@ -366,18 +370,19 @@ function render(){
     `<div class="sub-tab${curView==='decisions'?' active':''}" onclick="curView='decisions';render();">決定事項一覧</div>`;
   if(isAdmin()){
     subTabsHtml+=`<div class="sub-tab${curView==='quotes'?' active':''}" onclick="curView='quotes';render();">💰 見積り管理</div>`;
-    subTabsHtml+=`<div class="sub-tab${curView==='pos'?' active':''}" onclick="curView='pos';render();">📋 発注書</div>`;
   }
+  // 発注書は全員閲覧可能（編集はadminのみ）
+  subTabsHtml+=`<div class="sub-tab${curView==='pos'?' active':''}" onclick="curView='pos';render();">📋 発注書${isAdmin()?'':'（閲覧のみ）'}</div>`;
   document.getElementById('subTabs').innerHTML=subTabsHtml;
 
-  // 非管理職が管理職限定タブを見ている場合、打合せに強制変更
-  if((curView==='quotes'||curView==='pos')&&!isAdmin())curView='meetings';
+  // 非adminが見積タブを見ている場合は打合せへ
+  if(curView==='quotes'&&!isAdmin())curView='meetings';
 
   const ct=document.getElementById('content');
   if(curView==='meetings')ct.innerHTML=renderMeetings();
   else if(curView==='decisions')ct.innerHTML=renderDecisions();
   else if(curView==='quotes'&&isAdmin())ct.innerHTML=renderQuotes();
-  else if(curView==='pos'&&isAdmin())ct.innerHTML=renderPOs();
+  else if(curView==='pos')ct.innerHTML=renderPOs();
 
   // フォーカスとスクロール位置を復元
   const restore=()=>{
@@ -402,7 +407,8 @@ function render(){
 }
 
 function renderMeetings(){
-  let h=`<div style="margin-bottom:10px;"><button class="btn btn-p" onclick="openNewMeeting()">＋ 新規打合せ</button></div>`;
+  const ed=isAdmin();
+  let h=ed?`<div style="margin-bottom:10px;"><button class="btn btn-p" onclick="openNewMeeting()">＋ 新規打合せ</button></div>`:'';
   if(!MEETINGS.length)return h+'<div class="empty"><p>打合せがまだありません</p></div>';
   MEETINGS.forEach(m=>{
     const decs=DECISIONS.filter(d=>d.meeting_id===m.id);
@@ -411,8 +417,8 @@ function renderMeetings(){
         <span class="mt-date">${m.meeting_date}</span>
         <span class="mt-title">${esc(m.title)}</span>
         <div>
-          <button class="btn btn-o btn-sm" onclick="event.stopPropagation();openEditMeeting('${m.id}')">編集</button>
-          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delMeeting('${m.id}')">削除</button>
+          ${ed?`<button class="btn btn-o btn-sm" onclick="event.stopPropagation();openEditMeeting('${m.id}')">編集</button>
+          <button class="btn btn-d btn-sm" onclick="event.stopPropagation();delMeeting('${m.id}')">削除</button>`:''}
         </div>
       </div>
       <div class="mt-body" id="mt-${m.id}">`;
@@ -457,10 +463,12 @@ function renderPOs(){
   // 会社別の備考プレースホルダー
   const remarkPh=coName==='クロダルマ'?'指図':(coName==='シンメン'?'カラー':(coName==='NSP'?'注文No.':''));
 
-  let h=`<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+  const ed=isAdmin();
+  const dis=ed?'':' disabled';
+  let h=ed?`<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <button class="btn btn-p" onclick="addBulkPO()">＋ 量産発注を作成（全品番一括）</button>
     <button class="btn btn-o" onclick="addEmptyPO()">＋ 空の発注書を作成</button>
-  </div>`;
+  </div>`:'';
 
   if(!POS.length)return h+'<div class="empty"><p>発注書がまだありません</p></div>';
 
@@ -469,11 +477,11 @@ function renderPOs(){
     h+=`<div class="po-card">
       <div class="po-header">
         <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
-          <div><label class="po-lbl">📅 発注受領日</label><input type="date" value="${po.receive_date||''}" onchange="updPO('${po.id}','receive_date',this.value)" class="po-date"></div>
-          <div><label class="po-lbl">📤 発注送付日</label><input type="date" value="${po.send_date||''}" onchange="updPO('${po.id}','send_date',this.value)" class="po-date"></div>
-          <div style="flex:1;"><label class="po-lbl">備考</label><input type="text" value="${esc(po.notes||'')}" onchange="updPO('${po.id}','notes',this.value)" class="po-note" placeholder="メモ"></div>
+          <div><label class="po-lbl">📅 発注受領日</label><input type="date" value="${po.receive_date||''}" onchange="updPO('${po.id}','receive_date',this.value)" class="po-date"${dis}></div>
+          <div><label class="po-lbl">📤 発注送付日</label><input type="date" value="${po.send_date||''}" onchange="updPO('${po.id}','send_date',this.value)" class="po-date"${dis}></div>
+          <div style="flex:1;"><label class="po-lbl">備考</label><input type="text" value="${esc(po.notes||'')}" onchange="updPO('${po.id}','notes',this.value)" class="po-note" placeholder="メモ"${dis}></div>
         </div>
-        <button class="btn btn-d btn-sm" onclick="delPO('${po.id}')">発注書削除</button>
+        ${ed?`<button class="btn btn-d btn-sm" onclick="delPO('${po.id}')">発注書削除</button>`:''}
       </div>
       <div style="overflow:auto;"><table class="po-tbl">
         <thead><tr>
@@ -482,29 +490,30 @@ function renderPOs(){
           <th style="min-width:80px;">数量</th>
           <th style="min-width:120px;">希望納期</th>
           <th style="min-width:110px;">副資材込み価格</th>
-          <th style="min-width:50px;"></th>
+          ${ed?'<th style="min-width:50px;"></th>':''}
         </tr></thead><tbody>`;
     items.forEach(it=>{
       const isMaster=masterCodes.has((it.product_code||'').trim());
       const codeClass=it.product_code&&!isMaster?'po-code-warn':'';
       const autoPrice=priceMap[(it.product_code||'').trim()]||0;
       h+=`<tr>
-        <td><input type="text" value="${esc(it.product_code||'')}" onchange="updPOItem('${it.id}','product_code',this.value)" class="po-in ${codeClass}" placeholder="品番">${it.product_code&&!isMaster?'<span class="po-warn-icon" title="マスターに未登録です。開発・生産管理アプリで品番登録をお願いします">⚠️</span>':''}</td>
-        <td><input type="text" value="${esc(it.shiji_code||'')}" onchange="updPOItem('${it.id}','shiji_code',this.value)" class="po-in" placeholder="${remarkPh}"></td>
-        <td><input type="number" value="${it.quantity||''}" onchange="updPOItem('${it.id}','quantity',this.value)" class="po-in po-num" placeholder="0"></td>
-        <td><input type="date" value="${it.desired_delivery||''}" onchange="updPOItem('${it.id}','desired_delivery',this.value)" class="po-in"></td>
-        <td><span class="po-prefix">${u}</span><input type="number" step="0.01" value="${it.wholesale_price||autoPrice||''}" onchange="updPOItem('${it.id}','wholesale_price',this.value)" class="po-in po-num po-money" placeholder="${autoPrice||0}"></td>
-        <td style="white-space:nowrap;"><button class="btn btn-o btn-sm" onclick="addPOItemBefore('${po.id}','${it.id}')" title="この行の上に追加">＋↑</button> <button class="btn btn-d btn-sm" onclick="delPOItem('${it.id}')">×</button></td>
+        <td><input type="text" value="${esc(it.product_code||'')}" onchange="updPOItem('${it.id}','product_code',this.value)" class="po-in ${codeClass}" placeholder="品番"${dis}>${it.product_code&&!isMaster?'<span class="po-warn-icon" title="マスターに未登録です。開発・生産管理アプリで品番登録をお願いします">⚠️</span>':''}</td>
+        <td><input type="text" value="${esc(it.shiji_code||'')}" onchange="updPOItem('${it.id}','shiji_code',this.value)" class="po-in" placeholder="${remarkPh}"${dis}></td>
+        <td><input type="number" value="${it.quantity||''}" onchange="updPOItem('${it.id}','quantity',this.value)" class="po-in po-num" placeholder="0"${dis}></td>
+        <td><input type="date" value="${it.desired_delivery||''}" onchange="updPOItem('${it.id}','desired_delivery',this.value)" class="po-in"${dis}></td>
+        <td><span class="po-prefix">${u}</span><input type="number" step="0.01" value="${it.wholesale_price||autoPrice||''}" onchange="updPOItem('${it.id}','wholesale_price',this.value)" class="po-in po-num po-money" placeholder="${autoPrice||0}"${dis}></td>
+        ${ed?`<td style="white-space:nowrap;"><button class="btn btn-o btn-sm" onclick="addPOItemBefore('${po.id}','${it.id}')" title="この行の上に追加">＋↑</button> <button class="btn btn-d btn-sm" onclick="delPOItem('${it.id}')">×</button></td>`:''}
       </tr>`;
     });
     h+=`</tbody></table></div>
-      <div style="padding:8px;background:#f9fafb;"><button class="btn btn-o btn-sm" onclick="addPOItem('${po.id}')">＋ 行追加</button></div>
+      ${ed?`<div style="padding:8px;background:#f9fafb;"><button class="btn btn-o btn-sm" onclick="addPOItem('${po.id}')">＋ 行追加</button></div>`:''}
     </div>`;
   });
   return h;
 }
 
 async function addBulkPO(){
+  if(!guardEdit())return;
   const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
   if(!coName)return;
   if(!PRODUCTS.length){toast('品番が登録されていません');return;}
@@ -536,6 +545,7 @@ async function addBulkPO(){
 }
 
 async function addEmptyPO(){
+  if(!guardEdit())return;
   const coName=CUSTOMERS.find(c=>c.id===curCust)?.name||'';
   if(!coName)return;
   const today=new Date().toISOString().split('T')[0];
@@ -545,6 +555,7 @@ async function addEmptyPO(){
 }
 
 async function addPOItem(poId){
+  if(!guardEdit())return;
   const items=POITEMS.filter(i=>i.po_id===poId);
   const maxSort=items.length?Math.max(...items.map(i=>i.sort_order||0))+1:0;
   await sb.from('purchase_order_items').insert({
@@ -556,6 +567,7 @@ async function addPOItem(poId){
 }
 
 async function addPOItemBefore(poId,beforeItemId){
+  if(!guardEdit())return;
   const items=POITEMS.filter(i=>i.po_id===poId).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const target=items.find(i=>i.id===beforeItemId);
   if(!target)return;
@@ -576,11 +588,13 @@ async function addPOItemBefore(poId,beforeItemId){
 }
 
 async function updPO(id,field,val){
+  if(!guardEdit())return;
   await sb.from('purchase_orders').update({[field]:val,updated_by:currentUser.email,updated_at:new Date().toISOString()}).eq('id',id);
   const po=POS.find(p=>p.id===id);if(po)po[field]=val;
 }
 
 async function updPOItem(id,field,val){
+  if(!guardEdit())return;
   let v=val;
   if(['quantity','wholesale_price'].includes(field))v=parseFloat(val)||0;
   await sb.from('purchase_order_items').update({[field]:v}).eq('id',id);
@@ -589,12 +603,14 @@ async function updPOItem(id,field,val){
 }
 
 async function delPO(id){
+  if(!guardEdit())return;
   if(!confirm('この発注書を削除しますか？明細も全て削除されます'))return;
   await sb.from('purchase_orders').delete().eq('id',id);
   await loadMeetings();toast('削除しました');
 }
 
 async function delPOItem(id){
+  if(!guardEdit())return;
   await sb.from('purchase_order_items').delete().eq('id',id);
   await loadMeetings();
 }
@@ -900,6 +916,7 @@ function toggleMt(id){document.getElementById('mt-'+id)?.classList.toggle('open'
 async function switchYear(y){CUR_YEAR=y;await loadMeetings();}
 
 async function addYear(){
+  if(!guardEdit())return;
   const next=YEARS.length?YEARS[YEARS.length-1]+1:new Date().getFullYear();
   const input=prompt('追加する年度を入力（西暦4桁）:',next);
   if(!input)return;
@@ -938,6 +955,7 @@ async function addYear(){
 }
 
 async function deleteYear(yr){
+  if(!guardEdit())return;
   if(YEARS.length<=1){toast('最後の年度は削除できません');return;}
   if(!confirm(`${yr}年度の顧客管理データを削除しますか？\n議事録・決定事項・見積り・発注書のみ削除します。\n（開発・生産管理アプリの${yr}年度データは残ります）`))return;
   // 顧客管理スコープのみ削除（yearsテーブルは触らない＝開発管理側に影響しない）
@@ -1007,6 +1025,7 @@ function addDecision(){
 }
 
 async function saveMeeting(){
+  if(!guardEdit())return;
   const date=document.getElementById('mtDate').value;
   const title=document.getElementById('mtTitleIn').value.trim();
   if(!date||!title){toast('日付とタイトルを入力');return;}
@@ -1046,6 +1065,7 @@ async function saveMeeting(){
 }
 
 async function delMeeting(id){
+  if(!guardEdit())return;
   const m=MEETINGS.find(x=>x.id===id);if(!m)return;
   if(!confirm(`「${m.title}」を削除しますか？\n関連する決定事項も削除されます。`))return;
   await sb.from('decisions').delete().eq('meeting_id',id);
