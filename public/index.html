@@ -702,8 +702,7 @@ function renderQuotes(){
           ?`<input type="text" value="${esc(code)}" onchange="updQ2('${qid}','${r.product?.id||''}','product_code',this.value,${r.isCustom},'${qtype}')" class="qt-code-in">`
           :`<input type="text" value="${esc(code)}" onchange="updProductCode('${r.product.id}',this.value)" class="qt-code-in" title="編集すると品番マスターも更新されます">`;
         const customBadge=r.isCustom?'<div class="qt-custom-badge">独自追加</div>':'';
-        const insBtn=r.product?`<button class="btn btn-sm" style="margin-top:4px;width:100%;font-size:10px;padding:2px;background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc;" onclick="addCustomQuoteBefore('${r.product.id}')" title="この上に独自品番を追加">＋↑</button>`:'';
-        h+=`<td class="qt-code-cell" rowspan="${grp.rows.length}">${codeContent}${customBadge}${insBtn}</td>`;
+        h+=`<td class="qt-code-cell" rowspan="${grp.rows.length}">${codeContent}${customBadge}</td>`;
       }
 
       // カテゴリ
@@ -725,8 +724,13 @@ function renderQuotes(){
       else{h+=`<td class="qt-money-cell qt-main-money"><span class="qt-prefix">${u}</span><input type="number" step="0.01" value="${q.wholesale_with_sub||''}" onchange="updQ2('${qid}','${r.product?.id||''}','wholesale_with_sub',this.value,${r.isCustom},'${qtype}')" class="qt-in qt-num" placeholder="0"></td>`;}
       // 通貨
       h+=`<td class="qt-fixed">${curr}</td>`;
-      // 削除
-      h+=`<td>${r.isCustom&&!isSub?`<button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button>`:''}</td>`;
+      // 操作（＋↑ / ×）: 各品番グループの先頭行にrowspanで配置
+      if(rIdx===0){
+        const insBtn=r.product?`<button class="btn btn-o btn-sm" onclick="addCustomQuoteBefore('${r.product.id}')" title="この行の上に追加">＋↑</button>`:'';
+        const delBtn=r.isCustom?`<button class="btn btn-d btn-sm" onclick="delQuote('${q.id}')">×</button>`:'';
+        const sep=insBtn&&delBtn?' ':'';
+        h+=`<td rowspan="${grp.rows.length}" style="white-space:nowrap;">${insBtn}${sep}${delBtn}</td>`;
+      }
 
       h+=`</tr>`;
     });
